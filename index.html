@@ -3,1732 +3,858 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SecureLink - Emergency Response System</title>
+    <title>SecureLink - Emergency Response</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
             color: #fff;
-            overflow: hidden;
+            min-height: 100vh;
+            overflow-x: hidden;
         }
 
         .app {
-            min-height: 100vh;
             max-width: 500px;
             margin: 0 auto;
             display: flex;
             flex-direction: column;
+            min-height: 100vh;
             padding: 24px;
         }
 
-        /* Notification Styles */
+        /* ── Notification ─────────────────────────────────── */
         .notification {
-            position: fixed;
-            top: 24px;
-            left: 50%;
+            position: fixed; top: 24px; left: 50%;
             transform: translateX(-50%);
-            z-index: 50;
-            padding: 12px 24px;
-            border-radius: 16px;
-            font-weight: bold;
-            font-size: 14px;
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+            z-index: 50; padding: 12px 24px; border-radius: 16px;
+            font-weight: bold; font-size: 14px;
+            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.5);
             animation: slideDown 0.3s ease-out;
-            display: none;
+            display: none; text-align: center; max-width: 320px;
         }
-
-        .notification.show {
-            display: block;
-        }
-
-        .notification.success {
-            background-color: #16a34a;
-        }
-
-        .notification.error {
-            background-color: #dc2626;
-        }
-
-        .notification.warning {
-            background-color: #ea580c;
-        }
-
-        .notification.info {
-            background-color: #2563eb;
-        }
-
+        .notification.show    { display: block; }
+        .notification.success { background-color: #16a34a; }
+        .notification.error   { background-color: #dc2626; }
+        .notification.warning { background-color: #ea580c; }
+        .notification.info    { background-color: #2563eb; }
         @keyframes slideDown {
-            from {
-                opacity: 0;
-                transform: translateX(-50%) translateY(-20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateX(-50%) translateY(0);
-            }
+            from { opacity:0; transform: translateX(-50%) translateY(-20px); }
+            to   { opacity:1; transform: translateX(-50%) translateY(0); }
         }
 
-        /* Page Display */
-        .page {
-            display: none;
-            flex: 1;
-            flex-direction: column;
-        }
+        /* ── Pages ────────────────────────────────────────── */
+        .page { display: none; flex: 1; flex-direction: column; }
+        .page.active { display: flex; }
 
-        .page.active {
-            display: flex;
-        }
-
-        /* Landing Page */
+        /* ── Landing ──────────────────────────────────────── */
         .landing-content {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
+            flex: 1; display: flex; flex-direction: column;
+            align-items: center; justify-content: center; text-align: center;
         }
-
         .logo-container {
-            width: 96px;
-            height: 96px;
+            width: 96px; height: 96px;
             background: linear-gradient(135deg, #f97316 0%, #dc2626 100%);
-            border-radius: 24px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            border-radius: 24px; display: flex; align-items: center; justify-content: center;
             margin-bottom: 24px;
-            box-shadow: 0 20px 25px -5px rgba(249, 115, 22, 0.3);
-            animation: pulse 3s ease-in-out infinite;
+            box-shadow: 0 20px 25px -5px rgba(249,115,22,0.3);
+            animation: pulse-anim 3s ease-in-out infinite;
+            font-size: 48px;
         }
-
-        .logo-icon {
-            width: 48px;
-            height: 48px;
-            color: #fff;
-        }
-
-        @keyframes pulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-        }
+        @keyframes pulse-anim { 0%,100%{transform:scale(1);} 50%{transform:scale(1.05);} }
 
         .app-title {
-            font-size: 48px;
-            font-weight: 900;
-            letter-spacing: -2px;
-            margin-bottom: 12px;
+            font-size: 48px; font-weight: 900; letter-spacing: -2px; margin-bottom: 12px;
             background: linear-gradient(to right, #fff, #f97316);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
         }
+        .app-subtitle { color: #94a3b8; margin-bottom: 16px; max-width: 280px; line-height: 1.5; }
+        .app-tags { display: flex; gap: 8px; justify-content: center; margin-bottom: 48px; flex-wrap: wrap; }
+        .tag { padding: 4px 10px; background-color: #1e293b; border-radius: 6px; font-size: 10px; color: #475569; }
 
-        .app-subtitle {
-            color: #94a3b8;
-            margin-bottom: 16px;
-            max-width: 280px;
-        }
-
-        .app-tags {
-            display: flex;
-            gap: 8px;
-            justify-content: center;
-            margin-bottom: 48px;
-            flex-wrap: wrap;
-        }
-
-        .tag {
-            padding: 4px 8px;
-            background-color: #1e293b;
-            border-radius: 4px;
-            font-size: 10px;
-            color: #475569;
-        }
-
-        .button-group {
-            width: 100%;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            margin-bottom: 48px;
-        }
-
+        .button-group { width: 100%; display: flex; flex-direction: column; gap: 12px; margin-bottom: 32px; }
         .btn {
-            padding: 16px;
-            border: none;
-            border-radius: 16px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            font-size: 14px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
+            padding: 16px; border: none; border-radius: 16px; font-weight: bold;
+            cursor: pointer; transition: all 0.3s ease; font-size: 14px;
+            display: flex; align-items: center; justify-content: center; gap: 8px;
         }
-
         .btn-primary {
             background: linear-gradient(135deg, #ea580c 0%, #dc2626 100%);
-            color: white;
-            box-shadow: 0 10px 20px rgba(234, 88, 12, 0.3);
+            color: white; box-shadow: 0 10px 20px rgba(234,88,12,0.3);
         }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 15px 30px rgba(234,88,12,0.4); }
+        .btn-secondary { background-color: #1e293b; color: #cbd5e1; border: 1px solid #334155; }
+        .btn-secondary:hover { background-color: #0f172a; }
 
-        .btn-primary:hover {
-            background: linear-gradient(135deg, #d97706 0%, #b91c1c 100%);
-            transform: translateY(-2px);
-            box-shadow: 0 15px 30px rgba(234, 88, 12, 0.4);
-        }
-
-        .btn-secondary {
-            background-color: #1e293b;
-            color: #cbd5e1;
-            border: 1px solid #334155;
-        }
-
-        .btn-secondary:hover {
-            background-color: #0f172a;
-        }
-
-        .form-container {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            overflow-y: auto;
-        }
-
-        .form-header {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin-bottom: 24px;
-            color: #cbd5e1;
-            cursor: pointer;
-        }
-
-        .form-header:hover {
-            color: #e2e8f0;
-        }
-
-        .form-title {
-            font-size: 28px;
-            font-weight: 900;
-            color: #fff;
-            margin-bottom: 8px;
-        }
-
-        .form-subtitle {
-            color: #94a3b8;
-            font-size: 14px;
-            margin-bottom: 32px;
-        }
-
-        .form {
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
-        }
-
-        .form-group {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 16px;
-        }
-
-        .form-group.full {
-            grid-template-columns: 1fr;
-        }
-
-        .input-wrapper.full {
-            grid-column: 1 / -1;
-        }
+        /* ── Forms ────────────────────────────────────────── */
+        .form-container { flex: 1; display: flex; flex-direction: column; overflow-y: auto; }
+        .form-header { display: flex; align-items: center; gap: 8px; margin-bottom: 24px; color: #cbd5e1; cursor: pointer; font-size: 14px; }
+        .form-header:hover { color: #e2e8f0; }
+        .form-title    { font-size: 28px; font-weight: 900; margin-bottom: 8px; }
+        .form-subtitle { color: #94a3b8; font-size: 14px; margin-bottom: 32px; line-height: 1.5; }
+        .form { display: flex; flex-direction: column; gap: 16px; }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 
         .input-wrapper {
-            background-color: #1e293b;
-            border: 1px solid #334155;
-            border-radius: 12px;
-            padding: 12px;
-            display: flex;
-            flex-direction: column;
-            transition: border-color 0.3s ease;
+            background-color: #1e293b; border: 1px solid #334155;
+            border-radius: 12px; padding: 12px;
+            display: flex; flex-direction: column; transition: border-color 0.3s;
         }
-
-        .input-wrapper:focus-within {
-            border-color: #f97316;
-        }
-
-        .input-wrapper.horizontal {
-            flex-direction: row;
-            align-items: center;
-        }
-
-        .input-icon {
-            width: 18px;
-            height: 18px;
-            margin-right: 12px;
-            color: #64748b;
-            flex-shrink: 0;
-        }
-
-        .input-wrapper input {
-            flex: 1;
-            background: transparent;
-            border: none;
-            outline: none;
-            color: #fff;
-            font-size: 14px;
-        }
-
-        .input-wrapper input::placeholder {
-            color: #64748b;
-        }
-
-        .input-label {
-            font-size: 10px;
-            color: #64748b;
-            text-transform: uppercase;
-            font-weight: bold;
-            display: block;
-            margin-bottom: 4px;
-        }
-
-        .input-wrapper.horizontal .input-label {
-            margin-bottom: 0;
-            margin-right: 12px;
-            flex-shrink: 0;
-        }
+        .input-wrapper:focus-within { border-color: #f97316; }
+        .input-label { font-size: 10px; color: #64748b; text-transform: uppercase; font-weight: bold; margin-bottom: 4px; }
+        .input-wrapper input { background: transparent; border: none; outline: none; color: #fff; font-size: 14px; }
+        .input-wrapper input::placeholder { color: #64748b; }
 
         .section-divider {
-            padding: 16px 0 8px 0;
-            font-size: 12px;
-            font-weight: bold;
-            color: #64748b;
-            text-transform: uppercase;
-            text-align: center;
-            border-top: 1px solid #334155;
-            margin: 8px 0;
+            padding: 12px 0 4px; font-size: 11px; font-weight: bold;
+            color: #64748b; text-transform: uppercase; text-align: center;
+            border-top: 1px solid #334155; margin: 4px 0;
         }
 
-        /* Dashboard */
-        .dashboard-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 24px;
-        }
-
-        .user-info {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
+        /* ── Dashboard ────────────────────────────────────── */
+        .dash-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+        .user-info { display: flex; align-items: center; gap: 12px; }
         .user-avatar {
-            width: 48px;
-            height: 48px;
+            width: 48px; height: 48px;
             background: linear-gradient(135deg, #ea580c 0%, #dc2626 100%);
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 900;
-            font-size: 18px;
-            border: 2px solid #334155;
+            border-radius: 12px; display: flex; align-items: center; justify-content: center;
+            font-weight: 900; font-size: 18px; border: 2px solid #334155;
         }
+        .user-name { font-size: 14px; font-weight: bold; }
+        .user-sub  { font-size: 11px; color: #64748b; }
 
-        .user-text {
-            display: flex;
-            flex-direction: column;
-        }
-
-        .user-greeting {
-            font-size: 12px;
-            color: #64748b;
-        }
-
-        .user-name {
-            font-size: 14px;
-            font-weight: bold;
-            color: #fff;
-        }
-
-        .header-buttons {
-            display: flex;
-            gap: 8px;
-        }
-
+        .icon-btns { display: flex; gap: 8px; }
         .icon-btn {
-            width: 40px;
-            height: 40px;
-            background-color: #1e293b;
-            border: 1px solid #334155;
-            border-radius: 12px;
-            color: #cbd5e1;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.3s ease;
+            width: 40px; height: 40px; background-color: #1e293b;
+            border: 1px solid #334155; border-radius: 12px; color: #cbd5e1;
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
+            font-size: 16px; transition: all 0.3s;
         }
+        .icon-btn:hover { border-color: #f97316; }
+        .icon-btn.logout:hover { border-color: #dc2626; }
 
-        .icon-btn:hover {
-            color: #f97316;
-            border-color: #f97316;
+        /* GPS banners */
+        .banner { padding: 12px 16px; border-radius: 12px; margin-bottom: 12px; font-size: 12px; display: none; }
+        .banner.show { display: block; }
+        .banner-error   { background-color: rgba(220,38,38,0.1); border: 1px solid rgba(220,38,38,0.3); color: #fecaca; }
+        .banner-success { background-color: rgba(22,163,74,0.1);  border: 1px solid rgba(22,163,74,0.3);  color: #86efac; text-align:center; }
+        .retry-btn { background-color: #dc2626; color: white; padding: 6px 12px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; font-size: 11px; margin-top: 8px; }
+
+        /* Firebase status */
+        .firebase-status {
+            display: flex; align-items: center; gap: 8px;
+            background-color: rgba(59,130,246,0.1); border: 1px solid rgba(59,130,246,0.3);
+            border-radius: 10px; padding: 8px 12px; margin-bottom: 12px; font-size: 11px; color: #93c5fd;
         }
+        .fb-dot { width: 8px; height: 8px; border-radius: 50%; background-color: #3b82f6; animation: pulse-anim 1.5s ease-in-out infinite; }
+        .fb-dot.connected    { background-color: #22c55e; }
+        .fb-dot.disconnected { background-color: #ef4444; animation: none; }
 
-        .icon-btn.logout:hover {
-            color: #dc2626;
-            border-color: #dc2626;
-        }
-
-        .status-banner {
-            padding: 16px;
-            border-radius: 16px;
-            margin-bottom: 16px;
-            font-size: 12px;
-            display: none;
-        }
-
-        .status-banner.show {
-            display: block;
-        }
-
-        .status-error {
-            background-color: rgba(220, 38, 38, 0.1);
-            border: 1px solid rgba(220, 38, 38, 0.3);
-            color: #fecaca;
-        }
-
-        .status-success {
-            background-color: rgba(22, 163, 74, 0.1);
-            border: 1px solid rgba(22, 163, 74, 0.3);
-            color: #86efac;
-            text-align: center;
-        }
-
-        .retry-button {
-            background-color: #dc2626;
-            color: white;
-            padding: 8px 16px;
-            border-radius: 8px;
-            border: none;
-            font-weight: bold;
-            cursor: pointer;
-            font-size: 12px;
-            margin-top: 8px;
-        }
-
-        .retry-button:hover {
-            background-color: #b91c1c;
-        }
-
-        /* Panic Button */
-        .panic-container {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .panic-button {
-            width: 288px;
-            height: 288px;
-            border-radius: 50%;
+        /* ── Panic button ─────────────────────────────────── */
+        .panic-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .panic-btn {
+            width: 260px; height: 260px; border-radius: 50%;
             background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
-            border: 20px solid #0f172a;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            position: relative;
-            box-shadow: 0 0 60px rgba(220, 38, 38, 0.6);
-            transition: all 0.3s ease;
-            font-size: 32px;
-            font-weight: 900;
-            color: white;
+            border: 18px solid #0f172a;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            cursor: pointer; position: relative;
+            box-shadow: 0 0 60px rgba(220,38,38,0.5);
+            transition: all 0.3s; font-weight: 900; color: white;
         }
-
-        .panic-button:not(:disabled):hover {
-            transform: scale(1.02);
+        .panic-btn:not(:disabled):hover  { transform: scale(1.03); box-shadow: 0 0 80px rgba(220,38,38,0.7); }
+        .panic-btn:not(:disabled):active { transform: scale(0.95); }
+        .panic-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+        .panic-btn::before {
+            content:''; position:absolute; inset:0;
+            border: 4px solid #fca5a5; border-radius:50%;
+            animation: ring 2s cubic-bezier(0,0,0.2,1) infinite; opacity:0.2;
         }
+        @keyframes ring { 75%,100%{ transform:scale(2); opacity:0; } }
+        .panic-icon { font-size: 56px; margin-bottom: 8px; z-index: 1; }
+        .panic-label { font-size: 28px; letter-spacing: -1px; z-index: 1; }
+        .panic-sub   { font-size: 10px; opacity: 0.7; margin-top: 6px; z-index: 1; }
 
-        .panic-button:not(:disabled):active {
-            transform: scale(0.95);
+        .sys-status { margin-top: 24px; text-align: center; font-size: 11px; color: #64748b; letter-spacing: 1px; text-transform: uppercase; }
+
+        /* ── Alert active ─────────────────────────────────── */
+        #alertSection { display: none; flex: 1; flex-direction: column; }
+        .alert-head {
+            background: linear-gradient(to right, rgba(220,38,38,0.2), rgba(249,115,22,0.2));
+            border: 1px solid rgba(220,38,38,0.3);
+            padding: 20px; border-radius: 20px; margin-bottom: 12px;
+            display: flex; align-items: flex-start; justify-content: space-between;
         }
+        .alert-title    { font-size: 22px; font-weight: 900; color: #ef4444; font-style: italic; margin-bottom: 6px; }
+        .alert-veh      { font-size: 12px; color: #fca5a5; }
+        .alert-loc      { font-size: 10px; color: #fecaca; margin-top: 6px; }
+        .bcast-icon     { font-size: 28px; color: #dc2626; animation: pulse-anim 2s ease-in-out infinite; }
+        .bcast-label    { font-size: 8px; color: #fca5a5; margin-top: 4px; text-align:center; }
 
-        .panic-button:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        .panic-button::before {
-            content: '';
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            border: 4px solid #fca5a5;
-            border-radius: 50%;
-            animation: ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;
-            opacity: 0.2;
-            inset: 0;
-        }
-
-        .panic-button::after {
-            content: '';
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            border: 2px solid #ef4444;
-            border-radius: 50%;
-            opacity: 0.5;
-            inset: 0;
-        }
-
-        @keyframes ping {
-            75%, 100% {
-                transform: scale(2);
-                opacity: 0;
-            }
-        }
-
-        .panic-icon {
-            font-size: 64px;
-            margin-bottom: 12px;
-            position: relative;
-            z-index: 1;
-        }
-
-        .panic-text {
-            position: relative;
-            z-index: 1;
-            letter-spacing: -1px;
-        }
-
-        .panic-subtext {
-            font-size: 10px;
-            opacity: 0.7;
-            margin-top: 8px;
-        }
-
-        .system-status {
-            margin-top: 32px;
-            text-align: center;
-        }
-
-        .status-indicator {
-            font-size: 10px;
-            color: #64748b;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            margin-bottom: 8px;
-        }
-
-        .share-button {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            color: #f97316;
-            cursor: pointer;
-            font-size: 12px;
-            background: none;
-            border: none;
-            transition: color 0.3s ease;
-        }
-
-        .share-button:hover {
-            color: #fb923c;
-        }
-
-        /* Alert Active State */
-        .alert-header {
-            background: linear-gradient(to right, rgba(220, 38, 38, 0.2), rgba(249, 115, 22, 0.2));
-            border: 1px solid rgba(220, 38, 38, 0.3);
-            padding: 24px;
-            border-radius: 24px;
-            margin-bottom: 16px;
-            display: flex;
-            align-items: flex-start;
-            justify-content: space-between;
-            backdrop-filter: blur(10px);
-        }
-
-        .alert-title {
-            font-size: 24px;
-            font-weight: 900;
-            color: #ef4444;
-            text-transform: uppercase;
-            font-style: italic;
-            margin-bottom: 8px;
-        }
-
-        .alert-vehicle {
-            font-size: 12px;
-            color: #fca5a5;
-        }
-
-        .alert-location {
-            font-size: 10px;
-            color: #fecaca;
-            margin-top: 8px;
-        }
-
-        .broadcasting-indicator {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-
-        .broadcast-icon {
-            font-size: 32px;
-            color: #dc2626;
-            animation: pulse 2s ease-in-out infinite;
-            margin-bottom: 4px;
-        }
-
-        .broadcast-text {
-            font-size: 8px;
-            color: #fca5a5;
-            margin-top: 4px;
-        }
-
-        /* Dispatch Log */
         .dispatch-log {
-            flex: 1;
-            background-color: rgba(0, 0, 0, 0.3);
-            border: 1px solid #334155;
-            border-radius: 24px;
-            padding: 16px;
-            font-family: 'Monaco', 'Courier New', monospace;
-            font-size: 11px;
-            overflow-y: auto;
-            margin-bottom: 16px;
-            backdrop-filter: blur(10px);
+            flex: 1; background-color: rgba(0,0,0,0.3); border: 1px solid #334155;
+            border-radius: 20px; padding: 14px;
+            font-family: 'Monaco', monospace; font-size: 11px; overflow-y: auto; margin-bottom: 12px;
         }
+        .log-head  { color: #f97316; font-weight: bold; margin-bottom: 10px; }
+        .log-entry { margin-bottom: 10px; border-left: 2px solid rgba(139,92,46,0.5); padding-left: 10px; color: #cbd5e1; line-height: 1.5; }
 
-        .dispatch-log-header {
-            color: #f97316;
-            font-weight: bold;
-            margin-bottom: 12px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
+        .alert-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 4px; }
+        .a-btn { padding: 14px; border-radius: 14px; font-weight: bold; cursor: pointer; font-size: 12px; display: flex; align-items: center; justify-content: center; gap: 6px; color: white; border: none; transition: all 0.3s; }
+        .a-btn-share { background-color: #1e293b; border: 1px solid #475569; color: #cbd5e1; }
+        .a-btn-share:hover { background-color: #334155; }
+        .a-btn-safe  { background-color: #16a34a; }
+        .a-btn-safe:hover  { background-color: #15803d; }
 
-        .dispatch-log-entry {
-            margin-bottom: 12px;
-            border-left: 2px solid rgba(139, 92, 46, 0.5);
-            padding-left: 12px;
-            color: #cbd5e1;
-            line-height: 1.5;
-        }
-
-        .dispatch-log-loading {
-            color: #f97316;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            animation: pulse 1s ease-in-out infinite;
-        }
-
-        .pulse-dot {
-            width: 2px;
-            height: 2px;
-            background-color: #f97316;
-            border-radius: 50%;
-            animation: pulse 1s ease-in-out infinite;
-        }
-
-        /* ETA Display */
-        .eta-display {
-            background: linear-gradient(135deg, #ea580c 0%, #dc2626 100%);
-            padding: 24px;
-            border-radius: 24px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 16px;
-            box-shadow: 0 10px 20px rgba(234, 88, 12, 0.3);
-        }
-
-        .eta-text {
-            font-size: 10px;
-            font-weight: bold;
-            text-transform: uppercase;
-            opacity: 0.9;
-            margin-bottom: 8px;
-        }
-
-        .eta-time {
-            font-size: 36px;
-            font-weight: 900;
-            letter-spacing: -1px;
-            color: white;
-        }
-
-        .eta-subtext {
-            font-size: 10px;
-            opacity: 0.7;
-            margin-top: 8px;
-        }
-
-        .eta-icon {
-            font-size: 36px;
-            transform: rotate(45deg);
-            opacity: 0.9;
-        }
-
-        /* Action Buttons */
-        .action-buttons {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-        }
-
-        .btn-action {
-            padding: 16px;
-            border: 1px solid #334155;
-            border-radius: 16px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            font-size: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            color: white;
-        }
-
-        .btn-share {
-            background-color: #1e293b;
-            border-color: #475569;
-            color: #cbd5e1;
-        }
-
-        .btn-share:hover {
-            background-color: #334155;
-        }
-
-        .btn-safe {
-            background-color: #16a34a;
-        }
-
-        .btn-safe:hover {
-            background-color: #15803d;
-        }
-
-        /* Info Cards */
-        .info-cards {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 12px;
-            margin-top: auto;
-        }
-
+        /* ── Info cards ───────────────────────────────────── */
+        .info-cards { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-top: 16px; }
         .info-card {
-            background-color: #1e293b;
-            padding: 16px;
-            border-radius: 16px;
-            border: 1px solid #334155;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            text-align: center;
+            background-color: #1e293b; padding: 14px; border-radius: 14px;
+            border: 1px solid #334155; display: flex; flex-direction: column; align-items: center; text-align: center;
         }
+        .card-icon  { font-size: 18px; margin-bottom: 6px; }
+        .card-lbl   { font-size: 9px; color: #64748b; text-transform: uppercase; font-weight: bold; margin-bottom: 4px; }
+        .card-val   { font-size: 12px; font-weight: bold; color: #e2e8f0; }
+        .card-detail{ font-size: 10px; color: #64748b; }
 
-        .card-icon {
-            font-size: 18px;
-            margin-bottom: 8px;
-        }
+        /* ── Modals ───────────────────────────────────────── */
+        .modal { position: fixed; inset: 0; background-color: rgba(0,0,0,0.8); backdrop-filter: blur(4px); z-index: 40; display: none; flex-direction: column; align-items: flex-end; }
+        .modal.show { display: flex; }
+        .modal-box { background-color: #0f172a; width: 100%; border-top: 1px solid #334155; padding: 24px; max-height: 80vh; overflow-y: auto; border-radius: 24px 24px 0 0; animation: slideUp 0.3s ease-out; }
+        @keyframes slideUp { from{transform:translateY(100%);} to{transform:translateY(0);} }
+        .modal-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .modal-title{ font-size: 20px; font-weight: 900; }
+        .close-btn  { background: none; border: none; color: #64748b; cursor: pointer; font-size: 24px; }
+        .close-btn:hover { color: #fff; }
 
-        .card-label {
-            font-size: 9px;
-            color: #64748b;
-            text-transform: uppercase;
-            font-weight: bold;
-            margin-bottom: 4px;
-        }
+        .contact-item { background-color: #1e293b; border: 1px solid #334155; padding: 14px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        .contact-name { font-weight: bold; color: white; font-size: 13px; }
+        .contact-phone{ font-size: 12px; color: #cbd5e1; }
+        .contact-rel  { font-size: 10px; color: #64748b; margin-top: 2px; }
+        .del-btn { background: none; border: none; color: #ef4444; cursor: pointer; font-size: 16px; }
 
-        .card-value {
-            font-size: 12px;
-            font-weight: bold;
-            color: #e2e8f0;
-        }
+        .hist-item { background-color: #1e293b; border: 1px solid #334155; padding: 14px; border-radius: 12px; margin-bottom: 10px; }
+        .hist-row  { display: flex; justify-content: space-between; margin-bottom: 6px; }
+        .hist-num  { color: #ef4444; font-weight: bold; font-size: 12px; }
+        .hist-time { font-size: 10px; color: #64748b; }
+        .hist-detail { font-size: 12px; color: #cbd5e1; display: flex; flex-direction: column; gap: 3px; }
 
-        .card-detail {
-            font-size: 10px;
-            color: #64748b;
-        }
+        .empty-state { text-align: center; padding: 32px; color: #64748b; }
 
-        /* Modal Styles */
-        .modal {
-            position: fixed;
-            inset: 0;
-            background-color: rgba(0, 0, 0, 0.8);
-            backdrop-filter: blur(4px);
-            z-index: 40;
-            display: none;
-            flex-direction: column;
-            align-items: flex-end;
-        }
-
-        .modal.show {
-            display: flex;
-        }
-
-        .modal-content {
-            background-color: #0f172a;
-            width: 100%;
-            border-top: 1px solid #334155;
-            padding: 24px;
-            max-height: 80vh;
-            overflow-y: auto;
-            border-radius: 24px 24px 0 0;
-            animation: slideUp 0.3s ease-out;
-        }
-
-        @keyframes slideUp {
-            from {
-                transform: translateY(100%);
-            }
-            to {
-                transform: translateY(0);
-            }
-        }
-
-        .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 24px;
-        }
-
-        .modal-title {
-            font-size: 20px;
-            font-weight: 900;
-        }
-
-        .close-btn {
-            background: none;
-            border: none;
-            color: #64748b;
-            cursor: pointer;
-            font-size: 24px;
-            transition: color 0.3s ease;
-        }
-
-        .close-btn:hover {
-            color: #e2e8f0;
-        }
-
-        .modal-form {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            margin-bottom: 24px;
-        }
-
-        .contact-item {
-            background-color: #1e293b;
-            border: 1px solid #334155;
-            padding: 16px;
-            border-radius: 12px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 8px;
-        }
-
-        .contact-info {
-            flex: 1;
-        }
-
-        .contact-name {
-            font-weight: bold;
-            color: white;
-            margin-bottom: 4px;
-        }
-
-        .contact-phone {
-            font-size: 12px;
-            color: #cbd5e1;
-        }
-
-        .contact-relationship {
-            font-size: 10px;
-            color: #64748b;
-            margin-top: 4px;
-        }
-
-        .delete-btn {
-            background: none;
-            border: none;
-            color: #ef4444;
-            cursor: pointer;
-            transition: color 0.3s ease;
-        }
-
-        .delete-btn:hover {
-            color: #fca5a5;
-        }
-
-        .empty-state {
-            text-align: center;
-            padding: 32px;
-            color: #64748b;
-            font-size: 14px;
-        }
-
-        .alert-item {
-            background-color: #1e293b;
-            border: 1px solid #334155;
-            padding: 16px;
-            border-radius: 12px;
-            margin-bottom: 12px;
-        }
-
-        .alert-header-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            margin-bottom: 8px;
-        }
-
-        .alert-number {
-            color: #ef4444;
-            font-weight: bold;
-            font-size: 12px;
-        }
-
-        .alert-time {
-            font-size: 10px;
-            color: #64748b;
-        }
-
-        .alert-details {
-            font-size: 12px;
-            color: #cbd5e1;
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-        }
-
-        /* Status Bar */
+        /* ── Status bar ───────────────────────────────────── */
         .status-bar {
-            margin-top: 16px;
-            padding-top: 16px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 9px;
-            color: #475569;
-            font-family: 'Monaco', 'Courier New', monospace;
-            letter-spacing: 1px;
-            border-top: 1px solid rgba(52, 65, 85, 0.5);
+            margin-top: 12px; padding-top: 12px;
+            display: flex; justify-content: space-between; align-items: center;
+            font-size: 9px; color: #475569; font-family: monospace; letter-spacing: 1px;
+            border-top: 1px solid rgba(52,65,85,0.5);
         }
+        .gps-row  { display: flex; align-items: center; gap: 6px; }
+        .gps-dot  { width: 6px; height: 6px; border-radius: 50%; animation: pulse-anim 1s ease-in-out infinite; }
+        .gps-dot.on  { background-color: #22c55e; }
+        .gps-dot.off { background-color: #64748b; animation: none; }
 
-        .gps-indicator {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
+        audio { display: none; }
 
-        .gps-dot {
-            width: 4px;
-            height: 4px;
-            border-radius: 50%;
-            animation: pulse 1s ease-in-out infinite;
-        }
-
-        .gps-dot.active {
-            background-color: #22c55e;
-        }
-
-        .gps-dot.inactive {
-            background-color: #64748b;
-        }
-
-        /* Scrollbar */
         .form-container::-webkit-scrollbar,
         .dispatch-log::-webkit-scrollbar,
-        .modal-content::-webkit-scrollbar {
-            width: 6px;
-        }
-
-        .form-container::-webkit-scrollbar-track,
-        .dispatch-log::-webkit-scrollbar-track,
-        .modal-content::-webkit-scrollbar-track {
-            background: transparent;
-        }
-
+        .modal-box::-webkit-scrollbar { width: 4px; }
         .form-container::-webkit-scrollbar-thumb,
         .dispatch-log::-webkit-scrollbar-thumb,
-        .modal-content::-webkit-scrollbar-thumb {
-            background: #334155;
-            border-radius: 3px;
-        }
-
-        .form-container::-webkit-scrollbar-thumb:hover,
-        .dispatch-log::-webkit-scrollbar-thumb:hover,
-        .modal-content::-webkit-scrollbar-thumb:hover {
-            background: #475569;
-        }
-
-        /* Audio element */
-        audio {
-            display: none;
-        }
+        .modal-box::-webkit-scrollbar-thumb { background: #334155; border-radius: 2px; }
     </style>
 </head>
 <body>
-    <div class="app">
-        <!-- Notification -->
-        <div class="notification" id="notification"></div>
+<div class="app">
+    <div class="notification" id="notification"></div>
 
-        <!-- Landing Page -->
-        <div class="page active" id="landingPage">
-            <div class="landing-content">
-                <div class="logo-container">
-                    <span class="logo-icon">🛡️</span>
-                </div>
-                <h1 class="app-title">SECURE<span style="color: #f97316;">LINK</span></h1>
-                <p class="app-subtitle">Elite armed response for Gauteng's roads and townships.</p>
-                <div class="app-tags">
-                    <span class="tag">24/7 Response</span>
-                    <span class="tag">GPS Tracking</span>
-                    <span class="tag">AI Dispatch</span>
-                </div>
-                <div class="button-group">
-                    <button class="btn btn-primary" onclick="app.goToSignUp()">
-                        Get Started →
-                    </button>
-                    <button class="btn btn-secondary" onclick="app.goToLogin()">
-                        Log In
-                    </button>
-                </div>
-                <p style="font-size: 10px; color: #475569;">Protected by end-to-end encryption</p>
+    <!-- ══ LANDING ══════════════════════════════════════════ -->
+    <div class="page active" id="landingPage">
+        <div class="landing-content">
+            <div class="logo-container">🛡️</div>
+            <h1 class="app-title">SECURE<span style="color:#f97316;">LINK</span></h1>
+            <p class="app-subtitle">Elite armed response. Press PANIC — dispatchers respond in real time.</p>
+            <div class="app-tags">
+                <span class="tag">24/7 Response</span>
+                <span class="tag">Live GPS</span>
+                <span class="tag">Real-time Dispatch</span>
             </div>
-        </div>
-
-        <!-- Sign Up Page -->
-        <div class="page" id="signUpPage">
-            <div class="form-container">
-                <div class="form-header" onclick="app.goToLanding()">
-                    <span>← Back</span>
-                </div>
-                <h2 class="form-title">Create Account</h2>
-                <p class="form-subtitle">Join the SecureLink safety network.</p>
-                
-                <form class="form" onsubmit="app.handleSignUp(event)">
-                    <div class="form-group">
-                        <div class="input-wrapper">
-                            <label class="input-label">Name</label>
-                            <input type="text" placeholder="John" id="signupName" required>
-                        </div>
-                        <div class="input-wrapper">
-                            <label class="input-label">Surname</label>
-                            <input type="text" placeholder="Dube" id="signupSurname" required>
-                        </div>
-                    </div>
-
-                    <div class="input-wrapper full">
-                        <label class="input-label">📧 Email Address</label>
-                        <input type="email" placeholder="john@example.com" id="signupEmail" required>
-                    </div>
-
-                    <div class="input-wrapper full">
-                        <label class="input-label">🔒 Password</label>
-                        <input type="password" placeholder="••••••••" id="signupPassword" minlength="6" required>
-                    </div>
-
-                    <div class="section-divider">Vehicle Details</div>
-
-                    <div class="input-wrapper full">
-                        <label class="input-label">🚗 Registration (Number Plate)</label>
-                        <input type="text" placeholder="GP 123 456" id="signupVehicleReg" required>
-                    </div>
-
-                    <div class="form-group">
-                        <div class="input-wrapper">
-                            <label class="input-label">Make/Model</label>
-                            <input type="text" placeholder="Toyota Hilux" id="signupVehicleMake" required>
-                        </div>
-                        <div class="input-wrapper">
-                            <label class="input-label">🎨 Color</label>
-                            <input type="text" placeholder="White" id="signupVehicleColor" required>
-                        </div>
-                    </div>
-
-                    <button type="submit" class="btn btn-primary" style="margin-top: 24px;">
-                        Complete Sign Up
-                    </button>
-                </form>
+            <div class="button-group">
+                <button class="btn btn-primary" onclick="app.goTo('signUpPage')">Get Started →</button>
+                <button class="btn btn-secondary" onclick="app.goTo('loginPage')">Log In</button>
             </div>
-        </div>
-
-        <!-- Login Page -->
-        <div class="page" id="loginPage">
-            <div class="form-container">
-                <div class="form-header" onclick="app.goToLanding()">
-                    <span>← Back</span>
-                </div>
-                <h2 class="form-title">Welcome Back</h2>
-                <p class="form-subtitle">Log in to your SecureLink dashboard.</p>
-                
-                <form class="form" onsubmit="app.handleLogin(event)" style="margin-top: 48px;">
-                    <div class="input-wrapper full">
-                        <label class="input-label">📧 Email</label>
-                        <input type="email" placeholder="your@email.com" id="loginEmail" required>
-                    </div>
-
-                    <div class="input-wrapper full">
-                        <label class="input-label">🔒 Password</label>
-                        <input type="password" placeholder="••••••••" id="loginPassword" required>
-                    </div>
-
-                    <button type="submit" class="btn btn-primary" style="margin-top: 24px;">
-                        LOG IN
-                    </button>
-                </form>
-            </div>
-        </div>
-
-        <!-- Dashboard Page -->
-        <div class="page" id="dashboardPage">
-            <!-- Header -->
-            <div class="dashboard-header">
-                <div class="user-info">
-                    <div class="user-avatar" id="userAvatar">US</div>
-                    <div class="user-text">
-                        <div class="user-greeting">Welcome back,</div>
-                        <div class="user-name" id="userName">User</div>
-                    </div>
-                </div>
-                <div class="header-buttons">
-                    <button class="icon-btn" onclick="app.showContactsModal()" title="Emergency Contacts">👥</button>
-                    <button class="icon-btn" onclick="app.showHistoryModal()" title="Alert History">⏰</button>
-                    <button class="icon-btn logout" onclick="app.handleLogout()" title="Logout">🚪</button>
-                </div>
-            </div>
-
-            <!-- Status Banners -->
-            <div class="status-banner status-error" id="gpsErrorBanner">
-                <div id="gpsErrorMessage"></div>
-                <button class="retry-button" onclick="app.startGpsTracking()">Retry GPS</button>
-            </div>
-
-            <div class="status-banner status-success" id="gpsSuccessBanner">
-                ✅ GPS Active • Accuracy: <span id="gpsAccuracy">--</span>m
-            </div>
-
-            <!-- Panic Section -->
-            <div class="panic-container" id="panicContainer">
-                <button class="panic-button" id="panicButton" onclick="app.handlePanic()">
-                    <div class="panic-icon">⚠️</div>
-                    <div class="panic-text">PANIC</div>
-                    <div class="panic-subtext">PRESS & HOLD</div>
-                </button>
-
-                <div class="system-status">
-                    <div class="status-indicator" id="systemStatus">🟡 Awaiting GPS Signal...</div>
-                    <button class="share-button" id="shareButton" onclick="app.shareLocation()" style="display: none;">
-                        📍 Share Location
-                    </button>
-                </div>
-            </div>
-
-            <!-- Alert Active Section -->
-            <div id="alertSection" style="display: none; flex: 1; display: flex; flex-direction: column;">
-                <div class="alert-header">
-                    <div>
-                        <div class="alert-title">⚡ Emergency Active</div>
-                        <div class="alert-vehicle" id="alertVehicle">GP 123 456 • Vehicle</div>
-                        <div class="alert-location" id="alertLocation">📍 ---, ---</div>
-                    </div>
-                    <div class="broadcasting-indicator">
-                        <div class="broadcast-icon">📡</div>
-                        <div class="broadcast-text">BROADCASTING</div>
-                    </div>
-                </div>
-
-                <div class="dispatch-log" id="dispatchLog">
-                    <div class="dispatch-log-header">📡 DISPATCH LOG</div>
-                </div>
-
-                <div class="eta-display" id="etaDisplay" style="display: none;">
-                    <div>
-                        <div class="eta-text">Armed Response ETA</div>
-                        <div class="eta-time" id="etaTime">-- MIN</div>
-                        <div class="eta-subtext">Stay in vehicle • Doors locked</div>
-                    </div>
-                    <div class="eta-icon">→</div>
-                </div>
-
-                <div class="action-buttons">
-                    <button class="btn-action btn-share" onclick="app.shareLocation()">📍 Share</button>
-                    <button class="btn-action btn-safe" onclick="app.cancelAlert()">I'M SAFE</button>
-                </div>
-            </div>
-
-            <!-- Info Cards -->
-            <div class="info-cards" id="infoCards">
-                <div class="info-card">
-                    <div class="card-icon">🌧️</div>
-                    <div class="card-label">Weather</div>
-                    <div class="card-value" id="weatherValue">--</div>
-                    <div class="card-detail" id="weatherTemp">--°C</div>
-                </div>
-                <div class="info-card">
-                    <div class="card-icon">🔋</div>
-                    <div class="card-label">Battery</div>
-                    <div class="card-value" id="batteryValue">--%</div>
-                </div>
-                <div class="info-card">
-                    <div class="card-icon">👥</div>
-                    <div class="card-label">Contacts</div>
-                    <div class="card-value" id="contactsValue">0</div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Contacts Modal -->
-        <div class="modal" id="contactsModal">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h3 class="modal-title">Emergency Contacts</h3>
-                    <button class="close-btn" onclick="app.hideContactsModal()">×</button>
-                </div>
-
-                <form class="modal-form" onsubmit="app.addContact(event)">
-                    <div class="input-wrapper full">
-                        <label class="input-label">Name</label>
-                        <input type="text" placeholder="Mom / Partner / Friend" id="contactName" required>
-                    </div>
-                    <div class="input-wrapper full">
-                        <label class="input-label">Phone Number</label>
-                        <input type="tel" placeholder="+27 XX XXX XXXX" id="contactPhone" required>
-                    </div>
-                    <div class="input-wrapper full">
-                        <label class="input-label">Relationship</label>
-                        <input type="text" placeholder="Mother, Partner, etc." id="contactRelationship">
-                    </div>
-                    <button type="submit" class="btn btn-primary">👤 Add Contact</button>
-                </form>
-
-                <div id="contactsList"></div>
-            </div>
-        </div>
-
-        <!-- History Modal -->
-        <div class="modal" id="historyModal">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h3 class="modal-title">Alert History</h3>
-                    <button class="close-btn" onclick="app.hideHistoryModal()">×</button>
-                </div>
-                <div id="historyList"></div>
-            </div>
-        </div>
-
-        <!-- Status Bar -->
-        <div class="status-bar">
-            <div class="gps-indicator">
-                <div class="gps-dot inactive" id="gpsDot"></div>
-                <span id="gpsStatus">GPS: STANDBY</span>
-            </div>
-            <div>ID: secure-link-sa</div>
-            <div>V: 3.0.0-ULTRA</div>
+            <p style="font-size:10px;color:#475569;">Powered by Firebase • End-to-end secure</p>
         </div>
     </div>
 
-    <!-- Audio -->
-    <audio id="alertSound" src="data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBT+P1fLIeDEGIXfH8N2RQgsc"></audio>
-
-    <script>
-        const app = {
-            // State
-            currentPage: 'landing',
-            currentUser: null,
-            location: null,
-            locationError: null,
-            locationHistory: [],
-            weather: null,
-            isAlerting: false,
-            dispatchLogs: [],
-            status: 'idle',
-            eta: null,
-            battery: '--',
-            alertHistory: [],
-            watchId: null,
-
-            // Initialize
-            init() {
-                this.loadUserData();
-                this.loadAlertHistory();
-                this.loadWeather();
-                this.checkBattery();
-            },
-
-            // Storage
-            loadUserData() {
-                const stored = localStorage.getItem('user-profile');
-                if (stored) {
-                    this.currentUser = JSON.parse(stored);
-                    this.goToDashboard();
-                }
-            },
-
-            saveUserData(userData) {
-                localStorage.setItem('user-profile', JSON.stringify(userData));
-            },
-
-            loadAlertHistory() {
-                const stored = localStorage.getItem('alert-history');
-                if (stored) {
-                    this.alertHistory = JSON.parse(stored);
-                }
-            },
-
-            saveAlertHistory(alert) {
-                this.alertHistory.push(alert);
-                localStorage.setItem('alert-history', JSON.stringify(this.alertHistory.slice(-10)));
-            },
-
-            // Navigation
-            goToPage(page) {
-                document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-                document.getElementById(page).classList.add('active');
-                this.currentPage = page;
-
-                if (page === 'dashboardPage') {
-                    this.startGpsTracking();
-                }
-            },
-
-            goToLanding() { this.goToPage('landingPage'); },
-            goToSignUp() { this.goToPage('signUpPage'); },
-            goToLogin() { this.goToPage('loginPage'); },
-            goToDashboard() { this.goToPage('dashboardPage'); },
-
-            // Notifications
-            showNotification(message, type = 'info') {
-                const notif = document.getElementById('notification');
-                notif.textContent = message;
-                notif.className = `notification show ${type}`;
-                setTimeout(() => notif.classList.remove('show'), 3000);
-            },
-
-            // Auth
-            handleSignUp(e) {
-                e.preventDefault();
-                const name = document.getElementById('signupName').value;
-                const surname = document.getElementById('signupSurname').value;
-                const email = document.getElementById('signupEmail').value;
-                const password = document.getElementById('signupPassword').value;
-                const vehicleReg = document.getElementById('signupVehicleReg').value;
-                const vehicleMake = document.getElementById('signupVehicleMake').value;
-                const vehicleColor = document.getElementById('signupVehicleColor').value;
-
-                if (!name || !surname || !email || !vehicleReg) {
-                    this.showNotification('❌ Please fill all required fields', 'error');
-                    return;
-                }
-
-                this.currentUser = {
-                    name,
-                    surname,
-                    email,
-                    password,
-                    vehicleReg: vehicleReg.toUpperCase(),
-                    vehicleMake,
-                    vehicleColor,
-                    emergencyContacts: [],
-                    createdAt: new Date().toISOString()
-                };
-
-                this.saveUserData(this.currentUser);
-                this.updateDashboard();
-                this.showNotification('✅ Account created successfully!', 'success');
-                this.goToDashboard();
-            },
-
-            handleLogin(e) {
-                e.preventDefault();
-                const email = document.getElementById('loginEmail').value;
-                const password = document.getElementById('loginPassword').value;
-
-                if (!email || !password) {
-                    this.showNotification('❌ Email and password required', 'error');
-                    return;
-                }
-
-                this.currentUser = {
-                    name: 'User',
-                    email,
-                    password,
-                    emergencyContacts: [],
-                    vehicleReg: 'N/A',
-                    vehicleMake: 'Unknown',
-                    vehicleColor: 'Unknown'
-                };
-
-                this.saveUserData(this.currentUser);
-                this.updateDashboard();
-                this.showNotification('👋 Welcome back!', 'success');
-                this.goToDashboard();
-            },
-
-            handleLogout() {
-                localStorage.removeItem('user-profile');
-                this.currentUser = null;
-                this.location = null;
-                this.isAlerting = false;
-                this.dispatchLogs = [];
-                this.goToLanding();
-                this.showNotification('Logged out successfully', 'info');
-            },
-
-            updateDashboard() {
-                if (!this.currentUser) return;
-                
-                const initials = (this.currentUser.name?.[0] || 'U') + (this.currentUser.surname?.[0] || 'S');
-                document.getElementById('userAvatar').textContent = initials.toUpperCase();
-                document.getElementById('userName').textContent = this.currentUser.name || 'User';
-            },
-
-            // GPS Tracking
-            startGpsTracking() {
-                if (!('geolocation' in navigator)) {
-                    this.setLocationError('Geolocation not supported by your browser.');
-                    return;
-                }
-
-                if (this.watchId) {
-                    navigator.geolocation.clearWatch(this.watchId);
-                }
-
-                this.watchId = navigator.geolocation.watchPosition(
-                    (pos) => {
-                        this.location = {
-                            lat: pos.coords.latitude,
-                            lng: pos.coords.longitude,
-                            accuracy: pos.coords.accuracy,
-                            timestamp: new Date().toISOString()
-                        };
-                        this.locationHistory.push(this.location);
-                        this.updateGpsStatus();
-                        this.clearLocationError();
-                    },
-                    (err) => {
-                        let msg = 'GPS Error: Enable location services.';
-                        if (err.code === 1) msg = '❌ Permission denied. Allow location access in settings.';
-                        if (err.code === 2) msg = '📍 Position unavailable. Check GPS signal.';
-                        if (err.code === 3) msg = '⏱️ Location request timed out. Retrying...';
-                        this.setLocationError(msg);
-                    },
-                    { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }
-                );
-            },
-
-            setLocationError(msg) {
-                this.locationError = msg;
-                const banner = document.getElementById('gpsErrorBanner');
-                document.getElementById('gpsErrorMessage').textContent = msg;
-                banner.classList.add('show');
-                document.getElementById('gpsSuccessBanner').classList.remove('show');
-                document.getElementById('gpsDot').className = 'gps-dot inactive';
-                document.getElementById('gpsStatus').textContent = 'GPS: ERROR';
-                document.getElementById('systemStatus').textContent = '🟡 Awaiting GPS Signal...';
-                document.getElementById('systemStatus').style.color = '#64748b';
-                document.getElementById('panicButton').disabled = true;
-                document.getElementById('shareButton').style.display = 'none';
-            },
-
-            clearLocationError() {
-                if (this.locationError) {
-                    this.locationError = null;
-                    document.getElementById('gpsErrorBanner').classList.remove('show');
-                }
-            },
-
-            updateGpsStatus() {
-                if (this.location) {
-                    document.getElementById('gpsSuccessBanner').classList.add('show');
-                    document.getElementById('gpsAccuracy').textContent = Math.round(this.location.accuracy);
-                    document.getElementById('gpsDot').className = 'gps-dot active';
-                    document.getElementById('gpsStatus').textContent = 'GPS: ACTIVE';
-                    document.getElementById('systemStatus').textContent = '🟢 System Ready';
-                    document.getElementById('systemStatus').style.color = '#22c55e';
-                    document.getElementById('panicButton').disabled = false;
-                    document.getElementById('shareButton').style.display = 'flex';
-                    this.loadWeather();
-                }
-            },
-
-            // Weather
-            loadWeather() {
-                if (this.location) {
-                    this.weather = {
-                        temp: 26,
-                        condition: 'Partly Cloudy'
-                    };
-                    document.getElementById('weatherValue').textContent = this.weather.condition;
-                    document.getElementById('weatherTemp').textContent = this.weather.temp + '°C';
-                }
-            },
-
-            // Battery
-            checkBattery() {
-                if (navigator.getBattery) {
-                    navigator.getBattery()
-                        .then(bat => {
-                            this.battery = Math.round(bat.level * 100) + '%';
-                            document.getElementById('batteryValue').textContent = this.battery;
-                        })
-                        .catch(() => {
-                            this.battery = '--';
-                            document.getElementById('batteryValue').textContent = '--';
-                        });
-                }
-            },
-
-            // Emergency Contacts
-            showContactsModal() {
-                document.getElementById('contactsModal').classList.add('show');
-                this.renderContacts();
-            },
-
-            hideContactsModal() {
-                document.getElementById('contactsModal').classList.remove('show');
-            },
-
-            renderContacts() {
-                const list = document.getElementById('contactsList');
-                const contacts = this.currentUser?.emergencyContacts || [];
-
-                if (contacts.length === 0) {
-                    list.innerHTML = '<div class="empty-state">No emergency contacts yet</div>';
-                    return;
-                }
-
-                list.innerHTML = contacts.map((c, i) => `
-                    <div class="contact-item">
-                        <div class="contact-info">
-                            <div class="contact-name">${c.name}</div>
-                            <div class="contact-phone">${c.phone}</div>
-                            ${c.relationship ? `<div class="contact-relationship">${c.relationship}</div>` : ''}
-                        </div>
-                        <button class="delete-btn" onclick="app.removeContact(${i})">🗑️</button>
+    <!-- ══ SIGN UP ═══════════════════════════════════════════ -->
+    <div class="page" id="signUpPage">
+        <div class="form-container">
+            <div class="form-header" onclick="app.goTo('landingPage')">← Back</div>
+            <h2 class="form-title">Create Account</h2>
+            <p class="form-subtitle">Your details are sent to dispatchers when you press PANIC.</p>
+            <form class="form" onsubmit="app.handleSignUp(event)">
+                <div class="form-row">
+                    <div class="input-wrapper">
+                        <label class="input-label">First Name</label>
+                        <input type="text" placeholder="John" id="signupName" required>
                     </div>
-                `).join('');
-            },
-
-            addContact(e) {
-                e.preventDefault();
-                const name = document.getElementById('contactName').value;
-                const phone = document.getElementById('contactPhone').value;
-                const relationship = document.getElementById('contactRelationship').value;
-
-                if (!name || !phone) {
-                    this.showNotification('❌ Name and phone required', 'error');
-                    return;
-                }
-
-                if (!this.currentUser.emergencyContacts) {
-                    this.currentUser.emergencyContacts = [];
-                }
-
-                this.currentUser.emergencyContacts.push({ name, phone, relationship });
-                this.saveUserData(this.currentUser);
-                this.showNotification('✅ Emergency contact added', 'success');
-                
-                document.getElementById('contactName').value = '';
-                document.getElementById('contactPhone').value = '';
-                document.getElementById('contactRelationship').value = '';
-                document.getElementById('contactsValue').textContent = this.currentUser.emergencyContacts.length;
-                
-                this.renderContacts();
-            },
-
-            removeContact(index) {
-                this.currentUser.emergencyContacts.splice(index, 1);
-                this.saveUserData(this.currentUser);
-                document.getElementById('contactsValue').textContent = this.currentUser.emergencyContacts.length;
-                this.renderContacts();
-                this.showNotification('Contact removed', 'info');
-            },
-
-            // Alert History
-            showHistoryModal() {
-                document.getElementById('historyModal').classList.add('show');
-                this.renderHistory();
-            },
-
-            hideHistoryModal() {
-                document.getElementById('historyModal').classList.remove('show');
-            },
-
-            renderHistory() {
-                const list = document.getElementById('historyList');
-                if (this.alertHistory.length === 0) {
-                    list.innerHTML = '<div class="empty-state">No alerts yet</div>';
-                    return;
-                }
-
-                list.innerHTML = this.alertHistory.reverse().map((alert, i) => `
-                    <div class="alert-item">
-                        <div class="alert-header-row">
-                            <span class="alert-number">Alert #${this.alertHistory.length - i}</span>
-                            <span class="alert-time">${new Date(alert.timestamp).toLocaleString()}</span>
-                        </div>
-                        <div class="alert-details">
-                            <div>📍 ${alert.location?.lat?.toFixed(4) || '--'}, ${alert.location?.lng?.toFixed(4) || '--'}</div>
-                            <div>🚗 ${alert.vehicle}</div>
-                        </div>
+                    <div class="input-wrapper">
+                        <label class="input-label">Surname</label>
+                        <input type="text" placeholder="Dube" id="signupSurname" required>
                     </div>
-                `).join('');
-            },
+                </div>
+                <div class="input-wrapper">
+                    <label class="input-label">📧 Email</label>
+                    <input type="email" placeholder="john@example.com" id="signupEmail" required>
+                </div>
+                <div class="input-wrapper">
+                    <label class="input-label">🔒 Password</label>
+                    <input type="password" placeholder="••••••••" id="signupPassword" minlength="6" required>
+                </div>
+                <div class="section-divider">Vehicle Details</div>
+                <div class="input-wrapper">
+                    <label class="input-label">🚗 Number Plate</label>
+                    <input type="text" placeholder="GP 123 456" id="signupVehicleReg" required>
+                </div>
+                <div class="form-row">
+                    <div class="input-wrapper">
+                        <label class="input-label">Make / Model</label>
+                        <input type="text" placeholder="Toyota Hilux" id="signupVehicleMake" required>
+                    </div>
+                    <div class="input-wrapper">
+                        <label class="input-label">🎨 Color</label>
+                        <input type="text" placeholder="White" id="signupVehicleColor" required>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary" style="margin-top:16px;">Complete Sign Up</button>
+            </form>
+        </div>
+    </div>
 
-            // Panic
-            handlePanic() {
-                if (!this.location) {
-                    this.showNotification('⏳ Waiting for GPS lock...', 'warning');
-                }
+    <!-- ══ LOGIN ══════════════════════════════════════════════ -->
+    <div class="page" id="loginPage">
+        <div class="form-container">
+            <div class="form-header" onclick="app.goTo('landingPage')">← Back</div>
+            <h2 class="form-title">Welcome Back</h2>
+            <p class="form-subtitle">Log in to access your SecureLink dashboard.</p>
+            <form class="form" onsubmit="app.handleLogin(event)" style="margin-top:40px;">
+                <div class="input-wrapper">
+                    <label class="input-label">📧 Email</label>
+                    <input type="email" placeholder="your@email.com" id="loginEmail" required>
+                </div>
+                <div class="input-wrapper">
+                    <label class="input-label">🔒 Password</label>
+                    <input type="password" placeholder="••••••••" id="loginPassword" required>
+                </div>
+                <button type="submit" class="btn btn-primary" style="margin-top:24px;">Log In</button>
+            </form>
+        </div>
+    </div>
 
-                this.isAlerting = true;
-                document.getElementById('panicContainer').style.display = 'none';
-                document.getElementById('alertSection').style.display = 'flex';
-                document.getElementById('infoCards').style.display = 'none';
-                
-                // Trigger vibration
-                if ('vibrate' in navigator) {
-                    navigator.vibrate([200, 100, 200, 100, 200]);
-                }
+    <!-- ══ DASHBOARD ══════════════════════════════════════════ -->
+    <div class="page" id="dashboardPage">
+        <!-- Header -->
+        <div class="dash-header">
+            <div class="user-info">
+                <div class="user-avatar" id="userAvatar">US</div>
+                <div>
+                    <div class="user-name" id="userName">User</div>
+                    <div class="user-sub"  id="userVehicle">—</div>
+                </div>
+            </div>
+            <div class="icon-btns">
+                <button class="icon-btn" onclick="app.showContacts()" title="Contacts">👥</button>
+                <button class="icon-btn" onclick="app.showHistory()" title="History">⏰</button>
+                <button class="icon-btn logout" onclick="app.logout()" title="Logout">🚪</button>
+            </div>
+        </div>
 
-                // Play sound
-                document.getElementById('alertSound').play().catch(e => console.log('Audio failed:', e));
+        <!-- Firebase connection status -->
+        <div class="firebase-status" id="fbStatus">
+            <div class="fb-dot" id="fbDot"></div>
+            <span id="fbStatusText">Connecting to SecureLink servers…</span>
+        </div>
 
-                // Add logs
-                this.addDispatchLog('📡 PANIC SIGNAL RECEIVED');
-                
-                setTimeout(() => {
-                    this.addDispatchLog('🔐 Verifying SecureLink account...');
-                }, 500);
+        <!-- GPS banners -->
+        <div class="banner banner-error" id="gpsErrBanner">
+            <div id="gpsErrMsg"></div>
+            <button class="retry-btn" onclick="app.startGps()">Retry GPS</button>
+        </div>
+        <div class="banner banner-success" id="gpsOkBanner">
+            ✅ GPS Active • Accuracy: <span id="gpsAcc">--</span>m
+        </div>
 
-                setTimeout(() => {
-                    if (this.currentUser) {
-                        this.addDispatchLog(`✅ VERIFIED: ${this.currentUser.name} ${this.currentUser.surname}`);
-                        this.addDispatchLog(`🚗 Target: ${this.currentUser.vehicleColor} ${this.currentUser.vehicleMake} (${this.currentUser.vehicleReg})`);
-                        if (this.location) {
-                            this.addDispatchLog(`📍 Location confirmed: ${this.location.lat.toFixed(4)}, ${this.location.lng.toFixed(4)}`);
-                        }
-                        this.addDispatchLog(`⚡ Armed Response Unit dispatched`);
-                        
-                        this.eta = 5;
-                        this.updateEtaDisplay();
-                        document.getElementById('etaDisplay').style.display = 'flex';
-                    }
-                }, 2500);
+        <!-- Panic button -->
+        <div class="panic-wrap" id="panicWrap">
+            <button class="panic-btn" id="panicBtn" onclick="app.handlePanic()" disabled>
+                <div class="panic-icon">⚠️</div>
+                <div class="panic-label">PANIC</div>
+                <div class="panic-sub">TAP TO ALERT DISPATCH</div>
+            </button>
+            <div class="sys-status" id="sysStatus">🟡 Awaiting GPS…</div>
+        </div>
 
-                setTimeout(() => {
-                    this.eta = 3;
-                    this.updateEtaDisplay();
-                    this.addDispatchLog(`🚓 Unit approaching target area`);
-                }, 5000);
+        <!-- Alert active section -->
+        <div id="alertSection">
+            <div class="alert-head">
+                <div>
+                    <div class="alert-title">⚡ Emergency Active</div>
+                    <div class="alert-veh" id="alertVeh">—</div>
+                    <div class="alert-loc" id="alertLoc">📍 —</div>
+                </div>
+                <div style="text-align:center;">
+                    <div class="bcast-icon">📡</div>
+                    <div class="bcast-label">LIVE</div>
+                </div>
+            </div>
+            <div class="dispatch-log" id="dispatchLog">
+                <div class="log-head">📡 DISPATCH LOG</div>
+            </div>
+            <div class="alert-actions">
+                <button class="a-btn a-btn-share" onclick="app.shareLocation()">📍 Share</button>
+                <button class="a-btn a-btn-safe"  onclick="app.cancelAlert()">I'M SAFE ✓</button>
+            </div>
+        </div>
 
-                // Update alert view
-                this.updateAlertView();
+        <!-- Info cards -->
+        <div class="info-cards" id="infoCards">
+            <div class="info-card">
+                <div class="card-icon">🔋</div>
+                <div class="card-lbl">Battery</div>
+                <div class="card-val" id="battVal">--%</div>
+            </div>
+            <div class="info-card">
+                <div class="card-icon">📍</div>
+                <div class="card-lbl">GPS</div>
+                <div class="card-val" id="gpsCardVal">—</div>
+                <div class="card-detail" id="gpsCardDet">accuracy</div>
+            </div>
+            <div class="info-card">
+                <div class="card-icon">👥</div>
+                <div class="card-lbl">Contacts</div>
+                <div class="card-val" id="contactsVal">0</div>
+            </div>
+        </div>
+    </div>
 
-                // Save alert
-                this.saveAlertHistory({
-                    timestamp: new Date().toISOString(),
-                    location: this.location || { lat: 'Unknown', lng: 'Unknown' },
-                    vehicle: `${this.currentUser?.vehicleReg} - ${this.currentUser?.vehicleMake}`,
-                    resolved: false
-                });
+    <!-- ══ CONTACTS MODAL ════════════════════════════════════ -->
+    <div class="modal" id="contactsModal">
+        <div class="modal-box">
+            <div class="modal-head">
+                <h3 class="modal-title">Emergency Contacts</h3>
+                <button class="close-btn" onclick="app.hideContacts()">×</button>
+            </div>
+            <form style="display:flex;flex-direction:column;gap:10px;margin-bottom:20px;" onsubmit="app.addContact(event)">
+                <div class="input-wrapper">
+                    <label class="input-label">Name</label>
+                    <input type="text" placeholder="Mom / Partner" id="cName" required>
+                </div>
+                <div class="input-wrapper">
+                    <label class="input-label">Phone</label>
+                    <input type="tel" placeholder="+27 XX XXX XXXX" id="cPhone" required>
+                </div>
+                <div class="input-wrapper">
+                    <label class="input-label">Relationship</label>
+                    <input type="text" placeholder="Mother / Partner" id="cRel">
+                </div>
+                <button type="submit" class="btn btn-primary">👤 Add Contact</button>
+            </form>
+            <div id="contactsList"></div>
+        </div>
+    </div>
 
-                // Notify contacts
-                const contacts = this.currentUser?.emergencyContacts || [];
-                if (contacts.length > 0) {
-                    this.addDispatchLog(`📱 Notified ${contacts.length} emergency contact(s)`);
-                    this.showNotification(`Notified ${contacts.length} emergency contacts`, 'success');
-                }
-            },
+    <!-- ══ HISTORY MODAL ════════════════════════════════════ -->
+    <div class="modal" id="historyModal">
+        <div class="modal-box">
+            <div class="modal-head">
+                <h3 class="modal-title">Alert History</h3>
+                <button class="close-btn" onclick="app.hideHistory()">×</button>
+            </div>
+            <div id="historyList"></div>
+        </div>
+    </div>
 
-            addDispatchLog(message) {
-                this.dispatchLogs.push(message);
-                const log = document.getElementById('dispatchLog');
-                const entry = document.createElement('div');
-                entry.className = 'dispatch-log-entry';
-                entry.textContent = message;
-                log.appendChild(entry);
-                log.scrollTop = log.scrollHeight;
-            },
+    <!-- Status bar -->
+    <div class="status-bar">
+        <div class="gps-row">
+            <div class="gps-dot off" id="gpsDot"></div>
+            <span id="gpsStatusTxt">GPS: STANDBY</span>
+        </div>
+        <div>SECURELINK SA</div>
+        <div>V3.1 FIREBASE</div>
+    </div>
+</div>
 
-            updateAlertView() {
-                if (this.currentUser) {
-                    document.getElementById('alertVehicle').innerHTML = 
-                        `${this.currentUser.vehicleReg} • ${this.currentUser.vehicleColor} ${this.currentUser.vehicleMake}`;
-                }
-                if (this.location) {
-                    document.getElementById('alertLocation').innerHTML = 
-                        `📍 ${this.location.lat.toFixed(4)}, ${this.location.lng.toFixed(4)}`;
-                }
-            },
+<audio id="alertSnd" src="data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBT+P1fLIeDEGIXfH8N2RQgsc"></audio>
 
-            updateEtaDisplay() {
-                document.getElementById('etaTime').textContent = this.eta + ' MIN';
-            },
+<script type="module">
+import { initializeApp }                         from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
+import { getDatabase, ref, set, update, onValue }
+                                                  from "https://www.gstatic.com/firebasejs/12.9.0/firebase-database.js";
 
-            cancelAlert() {
-                this.isAlerting = false;
-                this.eta = null;
-                this.dispatchLogs = [];
-                document.getElementById('panicContainer').style.display = 'flex';
-                document.getElementById('alertSection').style.display = 'none';
-                document.getElementById('infoCards').style.display = 'grid';
-                document.getElementById('etaDisplay').style.display = 'none';
-                document.getElementById('dispatchLog').innerHTML = '<div class="dispatch-log-header">📡 DISPATCH LOG</div>';
-                this.showNotification('✅ Alert cancelled - Stay safe!', 'success');
-            },
+// ── Firebase config ────────────────────────────────────────
+const firebaseConfig = {
+    apiKey:            "AIzaSyAAHkSygnrYJF4axl2Mc-1wsE7erkI5tSc",
+    authDomain:        "punic-button-4428e.firebaseapp.com",
+    databaseURL:       "https://punic-button-4428e-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId:         "punic-button-4428e",
+    storageBucket:     "punic-button-4428e.firebasestorage.app",
+    messagingSenderId: "838411218299",
+    appId:             "1:838411218299:web:402c4d5c0385946b3ca1de",
+    measurementId:     "G-LZY15XKQL5"
+};
 
-            shareLocation() {
-                if (!this.location) {
-                    this.showNotification('❌ GPS location not available', 'error');
-                    return;
-                }
+const firebaseApp = initializeApp(firebaseConfig);
+const db          = getDatabase(firebaseApp);
 
-                const text = `🚨 SecureLink Emergency Alert\n\nUser: ${this.currentUser?.name} ${this.currentUser?.surname}\nVehicle: ${this.currentUser?.vehicleColor} ${this.currentUser?.vehicleMake} (${this.currentUser?.vehicleReg})\nLocation: https://www.google.com/maps?q=${this.location.lat},${this.location.lng}\nTime: ${new Date().toLocaleString()}`;
+// ── App state ──────────────────────────────────────────────
+const app = window.app = {
+    user:          null,
+    location:      null,
+    watchId:       null,
+    isAlerting:    false,
+    activeAlertId: null,
+    alertHistory:  [],
+    batteryPct:    '--',
 
-                if (navigator.share) {
-                    navigator.share({
-                        title: 'SecureLink Emergency Alert',
-                        text: text
-                    }).then(() => {
-                        this.showNotification('✅ Location shared', 'success');
-                    }).catch(e => {
-                        if (e.name !== 'AbortError') {
-                            navigator.clipboard.writeText(text);
-                            this.showNotification('📋 Location copied to clipboard', 'success');
-                        }
-                    });
-                } else {
-                    navigator.clipboard.writeText(text);
-                    this.showNotification('📋 Location copied to clipboard', 'success');
-                }
+    // ── Init ──────────────────────────────────────────────
+    init() {
+        this.loadLocalUser();
+        this.loadHistory();
+        this.checkBattery();
+        this.monitorConnection();
+    },
+
+    monitorConnection() {
+        const connRef = ref(db, '.info/connected');
+        onValue(connRef, snap => {
+            const connected = snap.val();
+            document.getElementById('fbDot').className        = 'fb-dot ' + (connected ? 'connected' : 'disconnected');
+            document.getElementById('fbStatusText').textContent = connected
+                ? '🟢 Connected to SecureLink servers'
+                : '🔴 Offline — check internet connection';
+        });
+    },
+
+    // ── Local profile (no auth needed) ────────────────────
+    loadLocalUser() {
+        const raw = localStorage.getItem('sl-user');
+        if (raw) { this.user = JSON.parse(raw); this.goTo('dashboardPage'); }
+    },
+    saveLocalUser() { localStorage.setItem('sl-user', JSON.stringify(this.user)); },
+
+    loadHistory() {
+        const raw = localStorage.getItem('sl-history');
+        if (raw) this.alertHistory = JSON.parse(raw);
+    },
+    saveHistory() { localStorage.setItem('sl-history', JSON.stringify(this.alertHistory.slice(-20))); },
+
+    // ── Navigation ────────────────────────────────────────
+    goTo(page) {
+        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+        document.getElementById(page).classList.add('active');
+        if (page === 'dashboardPage') { this.updateDashboardUI(); this.startGps(); }
+    },
+
+    // ── Notifications ─────────────────────────────────────
+    notify(msg, type = 'info') {
+        const el = document.getElementById('notification');
+        el.textContent = msg;
+        el.className = `notification show ${type}`;
+        setTimeout(() => el.classList.remove('show'), 3500);
+    },
+
+    // ── Auth (local storage — no Firebase Auth needed) ────
+    handleSignUp(e) {
+        e.preventDefault();
+        const name  = document.getElementById('signupName').value.trim();
+        const sur   = document.getElementById('signupSurname').value.trim();
+        const email = document.getElementById('signupEmail').value.trim();
+        const reg   = document.getElementById('signupVehicleReg').value.trim();
+        const make  = document.getElementById('signupVehicleMake').value.trim();
+        const color = document.getElementById('signupVehicleColor').value.trim();
+        if (!name || !sur || !email || !reg) { this.notify('❌ Fill all required fields', 'error'); return; }
+        this.user = {
+            userId:       'u-' + Date.now(),
+            name, surname: sur, email,
+            vehicleReg:   reg.toUpperCase(), vehicleMake: make, vehicleColor: color,
+            emergencyContacts: [],
+            createdAt: new Date().toISOString()
+        };
+        this.saveLocalUser();
+        this.notify('✅ Account created!', 'success');
+        this.goTo('dashboardPage');
+    },
+
+    handleLogin(e) {
+        e.preventDefault();
+        const email = document.getElementById('loginEmail').value.trim();
+        const raw   = localStorage.getItem('sl-user');
+        if (raw) {
+            const profile = JSON.parse(raw);
+            if (profile.email === email) {
+                this.user = profile;
+                this.notify('👋 Welcome back!', 'success');
+                this.goTo('dashboardPage');
+                return;
             }
+        }
+        this.notify('❌ No account found for that email', 'error');
+    },
+
+    logout() {
+        if (this.activeAlertId) this.cancelAlert();
+        if (this.watchId) navigator.geolocation.clearWatch(this.watchId);
+        this.user = null; this.location = null; this.isAlerting = false; this.activeAlertId = null;
+        this.goTo('landingPage');
+    },
+
+    updateDashboardUI() {
+        if (!this.user) return;
+        const initials = ((this.user.name?.[0] || 'U') + (this.user.surname?.[0] || '')).toUpperCase();
+        document.getElementById('userAvatar').textContent  = initials;
+        document.getElementById('userName').textContent    = this.user.name;
+        document.getElementById('userVehicle').textContent = `${this.user.vehicleReg} • ${this.user.vehicleColor} ${this.user.vehicleMake}`;
+        document.getElementById('contactsVal').textContent = (this.user.emergencyContacts || []).length;
+    },
+
+    // ── GPS ───────────────────────────────────────────────
+    startGps() {
+        if (!('geolocation' in navigator)) { this.setGpsError('Geolocation not supported'); return; }
+        if (this.watchId) navigator.geolocation.clearWatch(this.watchId);
+        this.watchId = navigator.geolocation.watchPosition(
+            pos => {
+                this.location = { lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: Math.round(pos.coords.accuracy) };
+                this.clearGpsError();
+                this.updateGpsUI();
+                // Push live location if alert is active
+                if (this.isAlerting && this.activeAlertId) {
+                    update(ref(db, 'alerts/' + this.activeAlertId), {
+                        location: this.location,
+                        battery:  this.batteryPct,
+                        lastSeen: new Date().toISOString()
+                    });
+                    document.getElementById('alertLoc').textContent = `📍 ${this.location.lat.toFixed(5)}, ${this.location.lng.toFixed(5)}`;
+                }
+            },
+            err => {
+                let msg = 'GPS error — enable location services.';
+                if (err.code === 1) msg = '❌ Permission denied — allow location in settings.';
+                if (err.code === 2) msg = '📍 Position unavailable — check GPS signal.';
+                if (err.code === 3) msg = '⏱️ GPS timed out — retrying…';
+                this.setGpsError(msg);
+            },
+            { enableHighAccuracy: true, maximumAge: 0, timeout: 15000 }
+        );
+    },
+
+    setGpsError(msg) {
+        document.getElementById('gpsErrMsg').textContent     = msg;
+        document.getElementById('gpsErrBanner').classList.add('show');
+        document.getElementById('gpsOkBanner').classList.remove('show');
+        document.getElementById('gpsDot').className          = 'gps-dot off';
+        document.getElementById('gpsStatusTxt').textContent  = 'GPS: ERROR';
+        document.getElementById('sysStatus').textContent     = '🟡 Awaiting GPS…';
+        document.getElementById('panicBtn').disabled          = true;
+        document.getElementById('gpsCardVal').textContent    = 'ERROR';
+    },
+
+    clearGpsError() { document.getElementById('gpsErrBanner').classList.remove('show'); },
+
+    updateGpsUI() {
+        document.getElementById('gpsOkBanner').classList.add('show');
+        document.getElementById('gpsAcc').textContent       = this.location.accuracy;
+        document.getElementById('gpsDot').className         = 'gps-dot on';
+        document.getElementById('gpsStatusTxt').textContent = 'GPS: ACTIVE';
+        document.getElementById('sysStatus').textContent    = '🟢 System Ready — Tap PANIC to alert dispatch';
+        document.getElementById('panicBtn').disabled         = false;
+        document.getElementById('gpsCardVal').textContent   = 'ACTIVE';
+        document.getElementById('gpsCardDet').textContent   = '±' + this.location.accuracy + 'm';
+    },
+
+    // ── Battery ───────────────────────────────────────────
+    checkBattery() {
+        if (navigator.getBattery) {
+            navigator.getBattery().then(bat => {
+                const update = () => {
+                    this.batteryPct = Math.round(bat.level * 100);
+                    document.getElementById('battVal').textContent = this.batteryPct + '%';
+                };
+                update();
+                bat.onlevelchange = update;
+            }).catch(() => {});
+        }
+    },
+
+    // ── PANIC → write to Firebase ─────────────────────────
+    async handlePanic() {
+        if (!this.location) { this.notify('⏳ Waiting for GPS…', 'warning'); return; }
+
+        this.isAlerting    = true;
+        this.activeAlertId = 'alert-' + Date.now();
+
+        const alertData = {
+            alertId:      this.activeAlertId,
+            status:       'active',
+            userId:       this.user.userId,
+            userName:     this.user.name,
+            userSurname:  this.user.surname,
+            vehicleReg:   this.user.vehicleReg,
+            vehicleMake:  this.user.vehicleMake,
+            vehicleColor: this.user.vehicleColor,
+            location:     this.location,
+            battery:      this.batteryPct,
+            timestamp:    new Date().toISOString(),
+            lastSeen:     new Date().toISOString(),
+            resolvedAt:   null,
+            resolvedBy:   null
         };
 
-        // Start app
-        app.init();
-    </script>
+        try {
+            // Write to Firebase — dispatch sees this instantly on any device
+            await set(ref(db, 'alerts/' + this.activeAlertId), alertData);
+        } catch(err) {
+            this.notify('⚠️ Could not reach server — check internet', 'error');
+            this.isAlerting = false;
+            return;
+        }
+
+        // UI swap
+        document.getElementById('panicWrap').style.display  = 'none';
+        document.getElementById('alertSection').style.display = 'flex';
+        document.getElementById('infoCards').style.display  = 'none';
+
+        if ('vibrate' in navigator) navigator.vibrate([200,100,200,100,200]);
+        document.getElementById('alertSnd').play().catch(() => {});
+
+        document.getElementById('alertVeh').textContent =
+            `${alertData.vehicleReg} • ${alertData.vehicleColor} ${alertData.vehicleMake}`;
+        document.getElementById('alertLoc').textContent =
+            `📍 ${this.location.lat.toFixed(5)}, ${this.location.lng.toFixed(5)}`;
+
+        this.addLog('📡 PANIC SIGNAL SENT TO DISPATCH');
+        setTimeout(() => this.addLog(`✅ Verified: ${alertData.userName} ${alertData.userSurname}`), 500);
+        setTimeout(() => this.addLog(`🚗 ${alertData.vehicleColor} ${alertData.vehicleMake} — ${alertData.vehicleReg}`), 1000);
+        setTimeout(() => this.addLog(`📍 GPS: ${this.location.lat.toFixed(5)}, ${this.location.lng.toFixed(5)} (±${this.location.accuracy}m)`), 1500);
+        setTimeout(() => this.addLog(`⚡ Dispatchers notified — help is on the way`), 2200);
+
+        // Save to local history
+        this.alertHistory.push({
+            alertId:   this.activeAlertId,
+            timestamp: alertData.timestamp,
+            location:  this.location,
+            vehicle:   `${alertData.vehicleReg} — ${alertData.vehicleMake}`
+        });
+        this.saveHistory();
+    },
+
+    addLog(msg) {
+        const log   = document.getElementById('dispatchLog');
+        const entry = document.createElement('div');
+        entry.className   = 'log-entry';
+        entry.textContent = msg;
+        log.appendChild(entry);
+        log.scrollTop = log.scrollHeight;
+    },
+
+    // ── Cancel alert → update Firebase ───────────────────
+    async cancelAlert() {
+        if (this.activeAlertId) {
+            try {
+                await update(ref(db, 'alerts/' + this.activeAlertId), {
+                    status:     'resolved',
+                    resolvedAt: new Date().toISOString(),
+                    resolvedBy: 'User (self — I\'m safe)'
+                });
+            } catch(e) { console.warn('Could not update Firebase on cancel:', e); }
+        }
+        this.isAlerting    = false;
+        this.activeAlertId = null;
+
+        document.getElementById('panicWrap').style.display    = 'flex';
+        document.getElementById('alertSection').style.display = 'none';
+        document.getElementById('infoCards').style.display    = 'grid';
+        document.getElementById('dispatchLog').innerHTML      = '<div class="log-head">📡 DISPATCH LOG</div>';
+        this.notify('✅ Alert cancelled — Stay safe!', 'success');
+    },
+
+    // ── Share ─────────────────────────────────────────────
+    shareLocation() {
+        if (!this.location) { this.notify('❌ GPS not available', 'error'); return; }
+        const u    = this.user;
+        const text = `🚨 SecureLink Emergency\nUser: ${u.name} ${u.surname}\nVehicle: ${u.vehicleColor} ${u.vehicleMake} (${u.vehicleReg})\nLocation: https://maps.google.com?q=${this.location.lat},${this.location.lng}\nTime: ${new Date().toLocaleString()}`;
+        if (navigator.share) {
+            navigator.share({ title: 'SecureLink Emergency', text }).catch(() => {});
+        } else {
+            navigator.clipboard?.writeText(text);
+            this.notify('📋 Location copied to clipboard', 'success');
+        }
+    },
+
+    // ── Contacts ──────────────────────────────────────────
+    showContacts() { document.getElementById('contactsModal').classList.add('show'); this.renderContacts(); },
+    hideContacts() { document.getElementById('contactsModal').classList.remove('show'); },
+
+    renderContacts() {
+        const list = document.getElementById('contactsList');
+        const arr  = this.user?.emergencyContacts || [];
+        list.innerHTML = arr.length === 0
+            ? '<div class="empty-state">No contacts yet</div>'
+            : arr.map((c, i) => `
+                <div class="contact-item">
+                    <div>
+                        <div class="contact-name">${c.name}</div>
+                        <div class="contact-phone">${c.phone}</div>
+                        ${c.rel ? `<div class="contact-rel">${c.rel}</div>` : ''}
+                    </div>
+                    <button class="del-btn" onclick="app.removeContact(${i})">🗑️</button>
+                </div>`).join('');
+    },
+
+    addContact(e) {
+        e.preventDefault();
+        const name  = document.getElementById('cName').value.trim();
+        const phone = document.getElementById('cPhone').value.trim();
+        const rel   = document.getElementById('cRel').value.trim();
+        if (!name || !phone) { this.notify('❌ Name and phone required', 'error'); return; }
+        if (!this.user.emergencyContacts) this.user.emergencyContacts = [];
+        this.user.emergencyContacts.push({ name, phone, rel });
+        this.saveLocalUser();
+        document.getElementById('cName').value = document.getElementById('cPhone').value = document.getElementById('cRel').value = '';
+        document.getElementById('contactsVal').textContent = this.user.emergencyContacts.length;
+        this.renderContacts();
+        this.notify('✅ Contact added', 'success');
+    },
+
+    removeContact(i) {
+        this.user.emergencyContacts.splice(i, 1);
+        this.saveLocalUser();
+        document.getElementById('contactsVal').textContent = this.user.emergencyContacts.length;
+        this.renderContacts();
+    },
+
+    // ── History ───────────────────────────────────────────
+    showHistory() { document.getElementById('historyModal').classList.add('show'); this.renderHistory(); },
+    hideHistory() { document.getElementById('historyModal').classList.remove('show'); },
+
+    renderHistory() {
+        const list = document.getElementById('historyList');
+        if (!this.alertHistory.length) { list.innerHTML = '<div class="empty-state">No alerts yet</div>'; return; }
+        list.innerHTML = [...this.alertHistory].reverse().map((a, i) => `
+            <div class="hist-item">
+                <div class="hist-row">
+                    <span class="hist-num">Alert #${this.alertHistory.length - i}</span>
+                    <span class="hist-time">${new Date(a.timestamp).toLocaleString()}</span>
+                </div>
+                <div class="hist-detail">
+                    <div>📍 ${a.location?.lat?.toFixed(4) ?? '--'}, ${a.location?.lng?.toFixed(4) ?? '--'}</div>
+                    <div>🚗 ${a.vehicle}</div>
+                </div>
+            </div>`).join('');
+    }
+};
+
+app.init();
+</script>
 </body>
 </html>
