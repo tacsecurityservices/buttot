@@ -308,6 +308,19 @@
                     <input type="email" placeholder="john@example.com" id="signupEmail" required>
                 </div>
                 <div class="input-wrapper">
+                    <label class="input-label">📱 Phone Number</label>
+                    <div style="display:flex;align-items:center;gap:8px;">
+                        <span style="color:#f97316;font-weight:bold;font-size:14px;white-space:nowrap;">+27</span>
+                        <input type="tel" placeholder="82 123 4567" id="signupPhone"
+                               pattern="[0-9 ]{9,12}"
+                               title="Enter your SA number without the leading 0 e.g. 82 123 4567"
+                               required
+                               style="flex:1;"
+                               oninput="this.value=this.value.replace(/[^0-9 ]/g,'')">
+                    </div>
+                    <div style="font-size:9px;color:#64748b;margin-top:4px;">Enter without leading 0 — e.g. 82 123 4567</div>
+                </div>
+                <div class="input-wrapper">
                     <label class="input-label">🔒 Password</label>
                     <input type="password" placeholder="••••••••" id="signupPassword" minlength="6" required>
                 </div>
@@ -573,10 +586,21 @@ const app = window.app = {
         const reg   = document.getElementById('signupVehicleReg').value.trim();
         const make  = document.getElementById('signupVehicleMake').value.trim();
         const color = document.getElementById('signupVehicleColor').value.trim();
+
+        // ── Phone number: strip spaces, remove leading 0, prepend +27 ──
+        const rawPhone = document.getElementById('signupPhone').value.trim().replace(/\s/g, '');
+        if (!rawPhone) { this.notify('❌ Phone number is required', 'error'); return; }
+        const digits = rawPhone.replace(/^0/, ''); // remove leading 0 if user typed it
+        if (digits.length < 9 || digits.length > 10) {
+            this.notify('❌ Enter a valid SA number e.g. 82 123 4567', 'error'); return;
+        }
+        const phone = '+27' + digits;
+
         if (!name || !sur || !email || !reg) { this.notify('❌ Fill all required fields', 'error'); return; }
+
         this.user = {
             userId:       'u-' + Date.now(),
-            name, surname: sur, email,
+            name, surname: sur, email, phone,
             vehicleReg:   reg.toUpperCase(), vehicleMake: make, vehicleColor: color,
             emergencyContacts: [],
             createdAt: new Date().toISOString()
@@ -615,6 +639,7 @@ const app = window.app = {
         document.getElementById('userAvatar').textContent  = initials;
         document.getElementById('userName').textContent    = this.user.name;
         document.getElementById('userVehicle').textContent = `${this.user.vehicleReg} • ${this.user.vehicleColor} ${this.user.vehicleMake}`;
+        document.getElementById('userSub2') && (document.getElementById('userSub2').textContent = this.user.phone ?? '');
         document.getElementById('contactsVal').textContent = (this.user.emergencyContacts || []).length;
     },
 
@@ -686,12 +711,14 @@ const app = window.app = {
         }
     },
 
-    // ── PANIC → write to Firebase ─────────────────────────
+    // ── PANIC → Firebase + Make.com webhook ──────────────
     async handlePanic() {
         if (!this.location) { this.notify('⏳ Waiting for GPS…', 'warning'); return; }
 
         this.isAlerting    = true;
         this.activeAlertId = 'alert-' + Date.now();
+
+        const mapsLink = `https://www.google.com/maps?q=${this.location.lat},${this.location.lng}`;
 
         const alertData = {
             alertId:      this.activeAlertId,
@@ -699,6 +726,7 @@ const app = window.app = {
             userId:       this.user.userId,
             userName:     this.user.name,
             userSurname:  this.user.surname,
+            userPhone:    this.user.phone ?? '',
             vehicleReg:   this.user.vehicleReg,
             vehicleMake:  this.user.vehicleMake,
             vehicleColor: this.user.vehicleColor,
@@ -710,14 +738,68 @@ const app = window.app = {
             resolvedBy:   null
         };
 
+        // ── Step 1: Write to Firebase so dispatch sees it ─
         try {
-            // Write to Firebase — dispatch sees this instantly on any device
             await set(ref(db, 'alerts/' + this.activeAlertId), alertData);
         } catch(err) {
             this.notify('⚠️ Could not reach server — check internet', 'error');
             this.isAlerting = false;
             return;
         }
+
+        // ── Step 2: Fire Make.com webhook DIRECTLY from user app ─
+        // This triggers Retell to call all support services immediately.
+        // No dispatcher needs to be online — it's fully automatic.
+        const MAKE_WEBHOOK = 'https://hook.eu1.make.com/phdt5uufktqhv7w2cxn2auwps964wkvv';
+
+        const webhookPayload = {
+            // Alert identity
+            alertId:      alertData.alertId,
+            timestamp:    alertData.timestamp,
+            // Driver
+            userName:     this.user.name,
+            userSurname:  this.user.surname,
+            userPhone:    this.user.phone ?? '',
+            userId:       this.user.userId,
+            // Vehicle
+            vehicleReg:   this.user.vehicleReg,
+            vehicleMake:  this.user.vehicleMake,
+            vehicleColor: this.user.vehicleColor,
+            // Location
+            latitude:     this.location.lat,
+            longitude:    this.location.lng,
+            accuracy:     this.location.accuracy,
+            mapsLink,
+            battery:      this.batteryPct,
+            // ── Retell dynamic variables ──────────────────
+            // These map directly to {{variable}} in your Retell agent prompt
+            retellVars: {
+                driver_name:  `${this.user.name} ${this.user.surname}`,
+                driver_phone: this.user.phone ?? '--',
+                vehicle_reg:  this.user.vehicleReg,
+                vehicle_desc: `${this.user.vehicleColor} ${this.user.vehicleMake}`,
+                gps_coords:   `${this.location.lat.toFixed(5)}, ${this.location.lng.toFixed(5)}`,
+                maps_link:    mapsLink,
+                battery:      String(this.batteryPct ?? '--'),
+            }
+        };
+
+        // Fire and forget — don't block the UI waiting for Make.com
+        fetch(MAKE_WEBHOOK, {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body:    JSON.stringify(webhookPayload)
+        })
+        .then(res => {
+            if (res.ok) {
+                this.addLog('📞 Support services notified via Retell AI');
+            } else {
+                this.addLog(`⚠️ Retell notification failed (HTTP ${res.status}) — dispatch alerted`);
+            }
+        })
+        .catch(() => {
+            this.addLog('⚠️ Could not reach Make.com — dispatch alerted via Firebase');
+        });
 
         // UI swap
         document.getElementById('panicWrap').style.display  = 'none';
