@@ -621,6 +621,9 @@ const app = window.app = {
     audioChunkIndex:  0,
     micTimerInterval: null,
     micSeconds:       0,
+    // ── GPS tracking ──────────────────────────────────────
+    _trackInterval:   null,
+    _alertWatcher:    null,
 
     // ── Init ─────────────────────────────────────────────
     init() {
@@ -827,11 +830,10 @@ const app = window.app = {
     // ══════════════════════════════════════════════════════
     async logout() {
         if (this.activeAlertId) await this.cancelAlert();
-        this.stopAudioRecording();
+        else { this.stopAudioRecording(); this.stopTrackingInterval(); this.stopAlertWatcher(); }
         if (this.watchId) navigator.geolocation.clearWatch(this.watchId);
         this.location = null; this.isAlerting = false; this.activeAlertId = null;
         await signOut(auth);
-        // onAuthStateChanged fires → redirects to landingPage
     },
 
     updateDashboardUI() {
@@ -844,24 +846,17 @@ const app = window.app = {
         document.getElementById('contactsVal').textContent = (this.user.emergencyContacts || []).length;
     },
 
-    // ── GPS ───────────────────────────────────────────────
+    // ── GPS — continuous tracking ─────────────────────────
     startGps() {
         if (!('geolocation' in navigator)) { this.setGpsError('Geolocation not supported'); return; }
         if (this.watchId) navigator.geolocation.clearWatch(this.watchId);
+
         this.watchId = navigator.geolocation.watchPosition(
             pos => {
                 this.location = { lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: Math.round(pos.coords.accuracy) };
                 this.clearGpsError();
                 this.updateGpsUI();
-                // Push live location if alert is active
-                if (this.isAlerting && this.activeAlertId) {
-                    update(ref(db, 'alerts/' + this.activeAlertId), {
-                        location: this.location,
-                        battery:  this.batteryPct,
-                        lastSeen: new Date().toISOString()
-                    });
-                    document.getElementById('alertLoc').textContent = `📍 ${this.location.lat.toFixed(5)}, ${this.location.lng.toFixed(5)}`;
-                }
+                if (this.isAlerting && this.activeAlertId) this._pushLocation();
             },
             err => {
                 let msg = 'GPS error — enable location services.';
@@ -870,8 +865,58 @@ const app = window.app = {
                 if (err.code === 3) msg = '⏱️ GPS timed out — retrying…';
                 this.setGpsError(msg);
             },
-            { enableHighAccuracy: true, maximumAge: 0, timeout: 15000 }
+            { enableHighAccuracy: true, maximumAge: 0, timeout: 30000 }
         );
+    },
+
+    // Force-push location to Firebase every 10s during alert (even if user is stationary)
+    startTrackingInterval() {
+        if (this._trackInterval) clearInterval(this._trackInterval);
+        this._trackInterval = setInterval(() => {
+            if (!this.isAlerting || !this.activeAlertId) {
+                clearInterval(this._trackInterval);
+                this._trackInterval = null;
+                return;
+            }
+            if (this.location) this._pushLocation();
+        }, 10000);
+    },
+
+    stopTrackingInterval() {
+        if (this._trackInterval) {
+            clearInterval(this._trackInterval);
+            this._trackInterval = null;
+        }
+    },
+
+    _pushLocation() {
+        const now = new Date().toISOString();
+        update(ref(db, 'alerts/' + this.activeAlertId), {
+            location: this.location,
+            battery:  this.batteryPct,
+            lastSeen: now
+        }).catch(() => {});
+        const el = document.getElementById('alertLoc');
+        if (el) el.textContent = `📍 ${this.location.lat.toFixed(5)}, ${this.location.lng.toFixed(5)} ±${this.location.accuracy}m`;
+    },
+
+    // Listen for dispatch resolving the alert remotely
+    startAlertWatcher(alertId) {
+        if (this._alertWatcher) this._alertWatcher(); // unsubscribe previous
+        this._alertWatcher = onValue(ref(db, `alerts/${alertId}/status`), snap => {
+            const status = snap.val();
+            if (status === 'resolved' && this.isAlerting && this.activeAlertId === alertId) {
+                this.notify('✅ Dispatch has resolved your alert — you are safe!', 'success');
+                this._doEndAlert();
+            }
+        });
+    },
+
+    stopAlertWatcher() {
+        if (this._alertWatcher) {
+            this._alertWatcher();
+            this._alertWatcher = null;
+        }
     },
 
     setGpsError(msg) {
@@ -880,7 +925,8 @@ const app = window.app = {
         document.getElementById('gpsOkBanner').classList.remove('show');
         document.getElementById('gpsDot').className          = 'gps-dot off';
         document.getElementById('gpsStatusTxt').textContent  = 'GPS: ERROR';
-        document.getElementById('sysStatus').textContent     = '🟡 Awaiting GPS…';
+        const sw = document.getElementById('sysStatus');
+        if (sw) sw.textContent = '🟡 Awaiting GPS…';
         document.getElementById('panicBtn').disabled          = true;
         document.getElementById('gpsCardVal').textContent    = 'ERROR';
     },
@@ -891,10 +937,11 @@ const app = window.app = {
         document.getElementById('gpsOkBanner').classList.add('show');
         document.getElementById('gpsAcc').textContent       = this.location.accuracy;
         document.getElementById('gpsDot').className         = 'gps-dot on';
-        document.getElementById('gpsStatusTxt').textContent = 'GPS: ACTIVE';
-        document.getElementById('sysStatus').textContent    = '🟢 System Ready — Tap PANIC to alert dispatch';
+        document.getElementById('gpsStatusTxt').textContent = this.isAlerting ? 'GPS: TRACKING 🔴' : 'GPS: ACTIVE';
+        const sw = document.getElementById('sysStatus');
+        if (sw && !this.isAlerting) sw.textContent = '🟢 System Ready — Tap PANIC to alert dispatch';
         document.getElementById('panicBtn').disabled         = false;
-        document.getElementById('gpsCardVal').textContent   = 'ACTIVE';
+        document.getElementById('gpsCardVal').textContent   = this.isAlerting ? 'TRACKING' : 'ACTIVE';
         document.getElementById('gpsCardDet').textContent   = '±' + this.location.accuracy + 'm';
     },
 
@@ -948,7 +995,14 @@ const app = window.app = {
             return;
         }
 
-        // ── Step 2: Start audio recording & streaming ─────
+        // ── Step 2: Start continuous GPS tracking ─────────
+        // Force-pushes every 10s even if device is stationary
+        // Also watches for dispatch resolving remotely
+        this.startTrackingInterval();
+        this.startAlertWatcher(this.activeAlertId);
+        this.updateGpsUI(); // flip GPS card to "TRACKING"
+
+        // ── Step 3: Start audio recording & streaming ─────
         this.startAudioRecording();
 
         // ── Step 2: Fire Make.com webhook DIRECTLY from user app ─
@@ -1045,7 +1099,6 @@ const app = window.app = {
 
     // ── Cancel alert → update Firebase ───────────────────
     async cancelAlert() {
-        this.stopAudioRecording();
         if (this.activeAlertId) {
             try {
                 await update(ref(db, 'alerts/' + this.activeAlertId), {
@@ -1055,14 +1108,22 @@ const app = window.app = {
                 });
             } catch(e) { console.warn('Could not update Firebase on cancel:', e); }
         }
+        this._doEndAlert();
+        this.notify('✅ Alert cancelled — Stay safe!', 'success');
+    },
+
+    // Shared cleanup — called by both cancelAlert and remote dispatch resolve
+    _doEndAlert() {
+        this.stopAudioRecording();
+        this.stopTrackingInterval();
+        this.stopAlertWatcher();
         this.isAlerting    = false;
         this.activeAlertId = null;
-
         document.getElementById('panicWrap').style.display    = 'flex';
         document.getElementById('alertSection').style.display = 'none';
         document.getElementById('infoCards').style.display    = 'grid';
         document.getElementById('dispatchLog').innerHTML      = '<div class="log-head">📡 DISPATCH LOG</div>';
-        this.notify('✅ Alert cancelled — Stay safe!', 'success');
+        this.updateGpsUI(); // flip GPS card back to ACTIVE
     },
 
     // ── Audio recording (MP3 via lamejs) ─────────────────
