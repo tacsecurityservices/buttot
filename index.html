@@ -253,6 +253,38 @@
         .gps-dot.on  { background-color: #22c55e; }
         .gps-dot.off { background-color: #64748b; animation: none; }
 
+        /* ── Mic / Audio recording ────────────────────────── */
+        .mic-bar {
+            display: flex; align-items: center; gap: 10px;
+            background: linear-gradient(135deg, rgba(220,38,38,0.15), rgba(168,85,247,0.1));
+            border: 1px solid rgba(220,38,38,0.4);
+            border-radius: 12px; padding: 10px 14px; margin-bottom: 10px;
+        }
+        .mic-dot {
+            width: 10px; height: 10px; border-radius: 50%; background: #ef4444;
+            animation: micPulse 0.6s ease-in-out infinite alternate; flex-shrink: 0;
+        }
+        @keyframes micPulse { from{opacity:1;transform:scale(1);} to{opacity:0.3;transform:scale(0.7);} }
+        .mic-label { font-size: 11px; font-weight: bold; color: #fca5a5; flex: 1; }
+        .mic-timer { font-size: 11px; color: #94a3b8; font-family: monospace; }
+        .mic-err   { font-size: 10px; color: #f97316; }
+
+        .waveform {
+            display: flex; align-items: center; gap: 2px; height: 20px;
+        }
+        .wave-bar {
+            width: 3px; background: #ef4444; border-radius: 2px;
+            animation: wave 0.5s ease-in-out infinite alternate;
+        }
+        .wave-bar:nth-child(1) { animation-delay:0s;    height:4px;  }
+        .wave-bar:nth-child(2) { animation-delay:0.1s;  height:12px; }
+        .wave-bar:nth-child(3) { animation-delay:0.2s;  height:20px; }
+        .wave-bar:nth-child(4) { animation-delay:0.3s;  height:8px;  }
+        .wave-bar:nth-child(5) { animation-delay:0.4s;  height:16px; }
+        .wave-bar:nth-child(6) { animation-delay:0.05s; height:6px;  }
+        .wave-bar:nth-child(7) { animation-delay:0.25s; height:14px; }
+        @keyframes wave { to { height: 4px; opacity: 0.4; } }
+
         audio { display: none; }
 
         .form-container::-webkit-scrollbar,
@@ -339,7 +371,7 @@
                         <input type="text" placeholder="White" id="signupVehicleColor" required>
                     </div>
                 </div>
-                <button type="submit" class="btn btn-primary" style="margin-top:16px;">Complete Sign Up</button>
+                <button type="submit" class="btn btn-primary" id="signupBtn" style="margin-top:16px;">Complete Sign Up</button>
             </form>
         </div>
     </div>
@@ -359,8 +391,36 @@
                     <label class="input-label">🔒 Password</label>
                     <input type="password" placeholder="••••••••" id="loginPassword" required>
                 </div>
-                <button type="submit" class="btn btn-primary" style="margin-top:24px;">Log In</button>
+                <button type="submit" class="btn btn-primary" id="loginBtn" style="margin-top:24px;">Log In</button>
+                <button type="button" onclick="app.goTo('forgotPage')"
+                    style="background:none;border:none;color:#64748b;font-size:12px;cursor:pointer;margin-top:8px;text-decoration:underline;text-underline-offset:3px;">
+                    Forgot my password
+                </button>
             </form>
+        </div>
+    </div>
+
+    <!-- ══ FORGOT PASSWORD ════════════════════════════════════ -->
+    <div class="page" id="forgotPage">
+        <div class="form-container">
+            <div class="form-header" onclick="app.goTo('loginPage')">← Back to Login</div>
+            <h2 class="form-title">Reset Password</h2>
+            <p class="form-subtitle">Enter your email and we'll send you a link to reset your password.</p>
+            <form class="form" onsubmit="app.handleForgotPassword(event)" style="margin-top:32px;">
+                <div class="input-wrapper">
+                    <label class="input-label">📧 Email</label>
+                    <input type="email" placeholder="your@email.com" id="forgotEmail" required>
+                </div>
+                <button type="submit" class="btn btn-primary" id="forgotBtn" style="margin-top:16px;">
+                    📨 Send Reset Email
+                </button>
+            </form>
+            <div id="forgotSuccess" style="display:none;margin-top:24px;background:rgba(22,163,74,0.1);border:1px solid rgba(22,163,74,0.3);border-radius:12px;padding:16px;text-align:center;">
+                <div style="font-size:28px;margin-bottom:8px;">📬</div>
+                <div style="font-weight:bold;color:#86efac;margin-bottom:6px;">Reset email sent!</div>
+                <div style="font-size:12px;color:#94a3b8;">Check your inbox and follow the link to set a new password. Then come back and log in.</div>
+                <button class="btn btn-secondary" onclick="app.goTo('loginPage')" style="margin-top:16px;">← Back to Login</button>
+            </div>
         </div>
     </div>
 
@@ -420,6 +480,23 @@
                     <div class="bcast-label">LIVE</div>
                 </div>
             </div>
+
+            <!-- Mic recording bar -->
+            <div class="mic-bar" id="micBar" style="display:none;">
+                <div class="waveform">
+                    <div class="wave-bar"></div><div class="wave-bar"></div>
+                    <div class="wave-bar"></div><div class="wave-bar"></div>
+                    <div class="wave-bar"></div><div class="wave-bar"></div>
+                    <div class="wave-bar"></div>
+                </div>
+                <div class="mic-label">🎙️ Recording &amp; streaming to dispatch</div>
+                <div class="mic-timer" id="micTimer">0:00</div>
+            </div>
+            <div class="mic-bar" id="micErrBar" style="display:none;background:rgba(249,115,22,0.1);border-color:rgba(249,115,22,0.3);">
+                <span style="font-size:16px;">🎙️</span>
+                <div class="mic-err" id="micErrMsg">Microphone not available</div>
+            </div>
+
             <div class="dispatch-log" id="dispatchLog">
                 <div class="log-head">📡 DISPATCH LOG</div>
             </div>
@@ -501,9 +578,16 @@
 <audio id="alertSnd" src="data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBT+P1fLIeDEGIXfH8N2RQgsc"></audio>
 
 <script type="module">
-import { initializeApp }                         from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
-import { getDatabase, ref, set, update, onValue }
-                                                  from "https://www.gstatic.com/firebasejs/12.9.0/firebase-database.js";
+import { initializeApp }                          from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
+import { getDatabase, ref, set, update, onValue, get } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-database.js";
+import {
+    getAuth,
+    createUserWithEmailAndPassword,
+    signInWithEmailAndPassword,
+    sendPasswordResetEmail,
+    onAuthStateChanged,
+    signOut
+} from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
 
 // ── Firebase config ────────────────────────────────────────
 const firebaseConfig = {
@@ -519,42 +603,64 @@ const firebaseConfig = {
 
 const firebaseApp = initializeApp(firebaseConfig);
 const db          = getDatabase(firebaseApp);
+const auth        = getAuth(firebaseApp);
 
 // ── App state ──────────────────────────────────────────────
 const app = window.app = {
-    user:          null,
+    user:          null,   // profile from DB (name, vehicle etc.)
+    firebaseUser:  null,   // Firebase Auth user object
     location:      null,
     watchId:       null,
     isAlerting:    false,
     activeAlertId: null,
     alertHistory:  [],
     batteryPct:    '--',
+    // ── Audio ─────────────────────────────────────────────
+    mediaRecorder:    null,
+    audioStream:      null,
+    audioChunkIndex:  0,
+    micTimerInterval: null,
+    micSeconds:       0,
 
-    // ── Init ──────────────────────────────────────────────
+    // ── Init ─────────────────────────────────────────────
     init() {
-        this.loadLocalUser();
         this.loadHistory();
         this.checkBattery();
-        this.monitorConnection();
+
+        // onAuthStateChanged is the ONLY source of truth for login state.
+        // It fires on page load if the user has an active session,
+        // so they stay logged in between visits without typing their password again.
+        onAuthStateChanged(auth, async firebaseUser => {
+            if (firebaseUser) {
+                this.firebaseUser = firebaseUser;
+                // Load profile from Realtime Database
+                const snap = await get(ref(db, 'users/' + firebaseUser.uid));
+                if (snap.exists()) {
+                    this.user = snap.val();
+                    this.monitorConnection();
+                    this.goTo('dashboardPage');
+                } else {
+                    // Auth exists but no profile — edge case, send to sign up
+                    await signOut(auth);
+                    this.goTo('landingPage');
+                }
+            } else {
+                this.firebaseUser = null;
+                this.user         = null;
+                this.goTo('landingPage');
+            }
+        });
     },
 
     monitorConnection() {
-        const connRef = ref(db, '.info/connected');
-        onValue(connRef, snap => {
+        onValue(ref(db, '.info/connected'), snap => {
             const connected = snap.val();
-            document.getElementById('fbDot').className        = 'fb-dot ' + (connected ? 'connected' : 'disconnected');
+            document.getElementById('fbDot').className         = 'fb-dot ' + (connected ? 'connected' : 'disconnected');
             document.getElementById('fbStatusText').textContent = connected
                 ? '🟢 Connected to SecureLink servers'
                 : '🔴 Offline — check internet connection';
         });
     },
-
-    // ── Local profile (no auth needed) ────────────────────
-    loadLocalUser() {
-        const raw = localStorage.getItem('sl-user');
-        if (raw) { this.user = JSON.parse(raw); this.goTo('dashboardPage'); }
-    },
-    saveLocalUser() { localStorage.setItem('sl-user', JSON.stringify(this.user)); },
 
     loadHistory() {
         const raw = localStorage.getItem('sl-history');
@@ -567,6 +673,12 @@ const app = window.app = {
         document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
         document.getElementById(page).classList.add('active');
         if (page === 'dashboardPage') { this.updateDashboardUI(); this.startGps(); }
+        // Reset forgot password form when navigating away
+        if (page !== 'forgotPage') {
+            document.getElementById('forgotSuccess').style.display = 'none';
+            const fe = document.getElementById('forgotEmail');
+            if (fe) fe.value = '';
+        }
     },
 
     // ── Notifications ─────────────────────────────────────
@@ -577,60 +689,149 @@ const app = window.app = {
         setTimeout(() => el.classList.remove('show'), 3500);
     },
 
-    // ── Auth (local storage — no Firebase Auth needed) ────
-    handleSignUp(e) {
+    setLoading(btnId, loading, defaultText) {
+        const btn = document.getElementById(btnId);
+        if (!btn) return;
+        btn.disabled     = loading;
+        btn.textContent  = loading ? '⏳ Please wait…' : defaultText;
+    },
+
+    // ══════════════════════════════════════════════════════
+    //  FIREBASE AUTH — SIGN UP
+    // ══════════════════════════════════════════════════════
+    async handleSignUp(e) {
         e.preventDefault();
+
         const name  = document.getElementById('signupName').value.trim();
         const sur   = document.getElementById('signupSurname').value.trim();
         const email = document.getElementById('signupEmail').value.trim();
+        const pass  = document.getElementById('signupPassword').value;
         const reg   = document.getElementById('signupVehicleReg').value.trim();
         const make  = document.getElementById('signupVehicleMake').value.trim();
         const color = document.getElementById('signupVehicleColor').value.trim();
 
-        // ── Phone number: strip spaces, remove leading 0, prepend +27 ──
+        // Phone validation
         const rawPhone = document.getElementById('signupPhone').value.trim().replace(/\s/g, '');
         if (!rawPhone) { this.notify('❌ Phone number is required', 'error'); return; }
-        const digits = rawPhone.replace(/^0/, ''); // remove leading 0 if user typed it
+        const digits = rawPhone.replace(/^0/, '');
         if (digits.length < 9 || digits.length > 10) {
             this.notify('❌ Enter a valid SA number e.g. 82 123 4567', 'error'); return;
         }
         const phone = '+27' + digits;
 
-        if (!name || !sur || !email || !reg) { this.notify('❌ Fill all required fields', 'error'); return; }
+        if (!name || !sur || !email || !pass || !reg) {
+            this.notify('❌ Fill all required fields', 'error'); return;
+        }
 
-        this.user = {
-            userId:       'u-' + Date.now(),
-            name, surname: sur, email, phone,
-            vehicleReg:   reg.toUpperCase(), vehicleMake: make, vehicleColor: color,
-            emergencyContacts: [],
-            createdAt: new Date().toISOString()
-        };
-        this.saveLocalUser();
-        this.notify('✅ Account created!', 'success');
-        this.goTo('dashboardPage');
+        this.setLoading('signupBtn', true, 'Complete Sign Up');
+
+        try {
+            // 1. Create Firebase Auth account (validates email, enforces password rules)
+            const cred = await createUserWithEmailAndPassword(auth, email, pass);
+
+            // 2. Save profile to Realtime Database under the user's UID
+            const profile = {
+                userId:            cred.user.uid,
+                name, surname:     sur, email, phone,
+                vehicleReg:        reg.toUpperCase(),
+                vehicleMake:       make,
+                vehicleColor:      color,
+                emergencyContacts: [],
+                createdAt:         new Date().toISOString()
+            };
+            await set(ref(db, 'users/' + cred.user.uid), profile);
+
+            // onAuthStateChanged will fire and redirect to dashboard automatically
+            this.notify('✅ Account created! Welcome to SecureLink.', 'success');
+
+        } catch(err) {
+            this.setLoading('signupBtn', false, 'Complete Sign Up');
+            const msgs = {
+                'auth/email-already-in-use':  '❌ That email is already registered — try logging in.',
+                'auth/invalid-email':          '❌ Invalid email address.',
+                'auth/weak-password':          '❌ Password must be at least 6 characters.',
+                'auth/network-request-failed': '❌ No internet connection.'
+            };
+            this.notify(msgs[err.code] ?? '❌ Sign up failed: ' + err.message, 'error');
+        }
     },
 
-    handleLogin(e) {
+    // ══════════════════════════════════════════════════════
+    //  FIREBASE AUTH — LOGIN
+    // ══════════════════════════════════════════════════════
+    async handleLogin(e) {
         e.preventDefault();
+
         const email = document.getElementById('loginEmail').value.trim();
-        const raw   = localStorage.getItem('sl-user');
-        if (raw) {
-            const profile = JSON.parse(raw);
-            if (profile.email === email) {
-                this.user = profile;
-                this.notify('👋 Welcome back!', 'success');
-                this.goTo('dashboardPage');
-                return;
+        const pass  = document.getElementById('loginPassword').value;
+
+        if (!email || !pass) { this.notify('❌ Enter your email and password', 'error'); return; }
+
+        this.setLoading('loginBtn', true, 'Log In');
+
+        try {
+            // Firebase checks the password — wrong password = error, no bypass possible
+            await signInWithEmailAndPassword(auth, email, pass);
+            // onAuthStateChanged fires → loads profile → redirects to dashboard
+
+        } catch(err) {
+            this.setLoading('loginBtn', false, 'Log In');
+            const msgs = {
+                'auth/invalid-credential':     '❌ Incorrect email or password.',
+                'auth/user-not-found':         '❌ No account found for that email.',
+                'auth/wrong-password':         '❌ Incorrect password.',
+                'auth/invalid-email':          '❌ Invalid email address.',
+                'auth/too-many-requests':      '⚠️ Too many attempts — try again later or reset your password.',
+                'auth/network-request-failed': '❌ No internet connection.'
+            };
+            this.notify(msgs[err.code] ?? '❌ Login failed: ' + err.message, 'error');
+        }
+    },
+
+    // ══════════════════════════════════════════════════════
+    //  FIREBASE AUTH — FORGOT PASSWORD
+    // ══════════════════════════════════════════════════════
+    async handleForgotPassword(e) {
+        e.preventDefault();
+
+        const email = document.getElementById('forgotEmail').value.trim();
+        if (!email) { this.notify('❌ Enter your email address', 'error'); return; }
+
+        this.setLoading('forgotBtn', true, '📨 Send Reset Email');
+
+        try {
+            await sendPasswordResetEmail(auth, email);
+            // Show success state — don't reveal whether email exists (security best practice)
+            document.getElementById('forgotSuccess').style.display = 'block';
+            document.querySelector('#forgotPage form').style.display = 'none';
+
+        } catch(err) {
+            this.setLoading('forgotBtn', false, '📨 Send Reset Email');
+            const msgs = {
+                'auth/invalid-email':          '❌ Invalid email address.',
+                'auth/network-request-failed': '❌ No internet connection.',
+                'auth/too-many-requests':      '⚠️ Too many requests — try again in a few minutes.'
+            };
+            // For user-not-found, still show success (don't leak whether account exists)
+            if (err.code === 'auth/user-not-found') {
+                document.getElementById('forgotSuccess').style.display = 'block';
+                document.querySelector('#forgotPage form').style.display = 'none';
+            } else {
+                this.notify(msgs[err.code] ?? '❌ Error: ' + err.message, 'error');
             }
         }
-        this.notify('❌ No account found for that email', 'error');
     },
 
-    logout() {
-        if (this.activeAlertId) this.cancelAlert();
+    // ══════════════════════════════════════════════════════
+    //  LOGOUT
+    // ══════════════════════════════════════════════════════
+    async logout() {
+        if (this.activeAlertId) await this.cancelAlert();
+        this.stopAudioRecording();
         if (this.watchId) navigator.geolocation.clearWatch(this.watchId);
-        this.user = null; this.location = null; this.isAlerting = false; this.activeAlertId = null;
-        this.goTo('landingPage');
+        this.location = null; this.isAlerting = false; this.activeAlertId = null;
+        await signOut(auth);
+        // onAuthStateChanged fires → redirects to landingPage
     },
 
     updateDashboardUI() {
@@ -747,6 +948,9 @@ const app = window.app = {
             return;
         }
 
+        // ── Step 2: Start audio recording & streaming ─────
+        this.startAudioRecording();
+
         // ── Step 2: Fire Make.com webhook DIRECTLY from user app ─
         // This triggers Retell to call all support services immediately.
         // No dispatcher needs to be online — it's fully automatic.
@@ -841,6 +1045,7 @@ const app = window.app = {
 
     // ── Cancel alert → update Firebase ───────────────────
     async cancelAlert() {
+        this.stopAudioRecording();
         if (this.activeAlertId) {
             try {
                 await update(ref(db, 'alerts/' + this.activeAlertId), {
@@ -858,6 +1063,147 @@ const app = window.app = {
         document.getElementById('infoCards').style.display    = 'grid';
         document.getElementById('dispatchLog').innerHTML      = '<div class="log-head">📡 DISPATCH LOG</div>';
         this.notify('✅ Alert cancelled — Stay safe!', 'success');
+    },
+
+    // ── Audio recording (MP3 via lamejs) ─────────────────
+    async startAudioRecording() {
+        try {
+            this.audioStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+
+            // Load lamejs MP3 encoder from CDN
+            await new Promise((resolve, reject) => {
+                if (window.lamejs) { resolve(); return; }
+                const s = document.createElement('script');
+                s.src = 'https://cdnjs.cloudflare.com/ajax/libs/lamejs/1.2.1/lame.min.js';
+                s.onload = resolve;
+                s.onerror = reject;
+                document.head.appendChild(s);
+            });
+
+            const audioCtx    = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
+            const source      = audioCtx.createMediaStreamSource(this.audioStream);
+            const bufferSize  = 8192;
+            const processor   = audioCtx.createScriptProcessor(bufferSize, 1, 1);
+
+            // MP3 encoder — 16kHz mono 64kbps (clear speech, small file)
+            const mp3enc = new lamejs.Mp3Encoder(1, 16000, 64);
+            let   mp3Buf = [];
+            let   chunkSamples = 0;
+            const samplesPerChunk = 16000 * 5; // 5 seconds of samples
+
+            this.audioChunkIndex = 0;
+            this.micSeconds      = 0;
+
+            processor.onaudioprocess = async (e) => {
+                if (!this.isAlerting) return;
+
+                // Convert float32 PCM → int16
+                const float32 = e.inputBuffer.getChannelData(0);
+                const int16   = new Int16Array(float32.length);
+                for (let i = 0; i < float32.length; i++) {
+                    int16[i] = Math.max(-32768, Math.min(32767, float32[i] * 32768));
+                }
+
+                const encoded = mp3enc.encodeBuffer(int16);
+                if (encoded.length > 0) mp3Buf.push(...encoded);
+                chunkSamples += float32.length;
+
+                // Every 5 seconds, flush a chunk to Firebase
+                if (chunkSamples >= samplesPerChunk) {
+                    const flushed = mp3enc.flush();
+                    if (flushed.length > 0) mp3Buf.push(...flushed);
+
+                    if (mp3Buf.length > 0 && this.activeAlertId) {
+                        const bytes  = new Uint8Array(mp3Buf);
+                        const base64 = btoa(String.fromCharCode(...bytes));
+                        const key    = String(this.audioChunkIndex++).padStart(6, '0');
+                        set(ref(db, `alerts/${this.activeAlertId}/audio/${key}`), {
+                            data:     base64,
+                            mimeType: 'audio/mpeg',
+                            ts:       new Date().toISOString()
+                        }).catch(() => {});
+                    }
+
+                    // Reset for next chunk
+                    mp3Buf       = [];
+                    chunkSamples = 0;
+                }
+            };
+
+            source.connect(processor);
+            processor.connect(audioCtx.destination);
+
+            // Store refs for cleanup
+            this._audioCtx   = audioCtx;
+            this._processor  = processor;
+            this._mp3enc     = mp3enc;
+            this._mp3Buf     = mp3Buf;
+
+            // Show mic bar + start timer
+            document.getElementById('micBar').style.display    = 'flex';
+            document.getElementById('micErrBar').style.display = 'none';
+            this.micTimerInterval = setInterval(() => {
+                this.micSeconds++;
+                const m  = Math.floor(this.micSeconds / 60);
+                const s  = String(this.micSeconds % 60).padStart(2, '0');
+                const el = document.getElementById('micTimer');
+                if (el) el.textContent = `${m}:${s}`;
+            }, 1000);
+
+            this.addLog('🎙️ Mic active — streaming MP3 audio to dispatch');
+
+        } catch(err) {
+            document.getElementById('micErrBar').style.display = 'flex';
+            document.getElementById('micErrMsg').textContent   =
+                err.name === 'NotAllowedError'
+                    ? '🎙️ Mic permission denied — no audio stream'
+                    : '🎙️ Microphone unavailable — no audio stream';
+            this.addLog('⚠️ Mic unavailable — alert sent without audio');
+        }
+    },
+
+    stopAudioRecording() {
+        // Flush final MP3 chunk before stopping
+        if (this._mp3enc && this._mp3Buf !== undefined && this.activeAlertId) {
+            try {
+                const flushed = this._mp3enc.flush();
+                if (flushed.length > 0) {
+                    const allBytes = [...(this._mp3Buf || []), ...flushed];
+                    if (allBytes.length > 0) {
+                        const bytes  = new Uint8Array(allBytes);
+                        const base64 = btoa(String.fromCharCode(...bytes));
+                        const key    = String(this.audioChunkIndex++).padStart(6, '0');
+                        set(ref(db, `alerts/${this.activeAlertId}/audio/${key}`), {
+                            data:     base64,
+                            mimeType: 'audio/mpeg',
+                            ts:       new Date().toISOString()
+                        }).catch(() => {});
+                    }
+                }
+            } catch(e) { /* ignore flush errors on cleanup */ }
+        }
+
+        if (this._processor) { try { this._processor.disconnect(); } catch(e) {} }
+        if (this._audioCtx)  { try { this._audioCtx.close();       } catch(e) {} }
+        if (this.audioStream) {
+            this.audioStream.getTracks().forEach(t => t.stop());
+            this.audioStream = null;
+        }
+        if (this.micTimerInterval) {
+            clearInterval(this.micTimerInterval);
+            this.micTimerInterval = null;
+        }
+
+        this._audioCtx   = null;
+        this._processor  = null;
+        this._mp3enc     = null;
+        this._mp3Buf     = [];
+        this.mediaRecorder   = null;
+        this.audioChunkIndex = 0;
+        this.micSeconds      = 0;
+
+        document.getElementById('micBar').style.display    = 'none';
+        document.getElementById('micErrBar').style.display = 'none';
     },
 
     // ── Share ─────────────────────────────────────────────
@@ -901,7 +1247,10 @@ const app = window.app = {
         if (!name || !phone) { this.notify('❌ Name and phone required', 'error'); return; }
         if (!this.user.emergencyContacts) this.user.emergencyContacts = [];
         this.user.emergencyContacts.push({ name, phone, rel });
-        this.saveLocalUser();
+        // Save to Firebase DB so it persists across devices
+        update(ref(db, 'users/' + this.firebaseUser.uid), {
+            emergencyContacts: this.user.emergencyContacts
+        });
         document.getElementById('cName').value = document.getElementById('cPhone').value = document.getElementById('cRel').value = '';
         document.getElementById('contactsVal').textContent = this.user.emergencyContacts.length;
         this.renderContacts();
@@ -910,7 +1259,9 @@ const app = window.app = {
 
     removeContact(i) {
         this.user.emergencyContacts.splice(i, 1);
-        this.saveLocalUser();
+        update(ref(db, 'users/' + this.firebaseUser.uid), {
+            emergencyContacts: this.user.emergencyContacts
+        });
         document.getElementById('contactsVal').textContent = this.user.emergencyContacts.length;
         this.renderContacts();
     },
