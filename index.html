@@ -8,11 +8,11 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="SecureLink">
     <meta name="theme-color" content="#0f172a">
-    <meta name="description" content="SecureLink Emergency Response — one tap to alert dispatch">
+    <meta name="description" content="Road Angel Emergency Response — one tap to alert dispatch">
     <link rel="manifest" href="manifest.json">
     <!-- iOS home screen icon — inline so no missing file error -->
     <link rel="apple-touch-icon" href="icon.png">
-    <title>SecureLink - Emergency Response</title>
+    <title>Road Angel - Emergency Response</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -318,7 +318,7 @@
     <div class="page active" id="landingPage">
         <div class="landing-content">
             <div class="logo-container">🛡️</div>
-            <h1 class="app-title">SECURE<span style="color:#f97316;">LINK</span></h1>
+            <h1 class="app-title">Road<span style="color:#f97316;">Angel</span></h1>
             <p class="app-subtitle">Elite armed response. Press PANIC — dispatchers respond in real time.</p>
             <div class="app-tags">
                 <span class="tag">24/7 Response</span>
@@ -368,12 +368,12 @@
                     <div style="font-size:9px;color:#64748b;margin-top:4px;">Enter without leading 0 — e.g. 82 123 4567</div>
                 </div>
                 <div class="input-wrapper">
-                    <label class="input-label">🔒 Password</label>
+                    <label class="input-label">Password</label>
                     <input type="password" placeholder="••••••••" id="signupPassword" minlength="6" required>
                 </div>
                 <div class="section-divider">Vehicle Details</div>
                 <div class="input-wrapper">
-                    <label class="input-label">🚗 Number Plate</label>
+                    <label class="input-label">Number Plate</label>
                     <input type="text" placeholder="GP 123 456" id="signupVehicleReg" required>
                 </div>
                 <div class="form-row">
@@ -382,7 +382,7 @@
                         <input type="text" placeholder="Toyota Hilux" id="signupVehicleMake" required>
                     </div>
                     <div class="input-wrapper">
-                        <label class="input-label">🎨 Color</label>
+                        <label class="input-label">Color</label>
                         <input type="text" placeholder="White" id="signupVehicleColor" required>
                     </div>
                 </div>
@@ -399,11 +399,11 @@
             <p class="form-subtitle">Log in to access your SecureLink dashboard.</p>
             <form class="form" onsubmit="app.handleLogin(event)" style="margin-top:40px;">
                 <div class="input-wrapper">
-                    <label class="input-label">📧 Email</label>
+                    <label class="input-label">Email</label>
                     <input type="email" placeholder="your@email.com" id="loginEmail" required>
                 </div>
                 <div class="input-wrapper">
-                    <label class="input-label">🔒 Password</label>
+                    <label class="input-label">Password</label>
                     <input type="password" placeholder="••••••••" id="loginPassword" required>
                 </div>
                 <button type="submit" class="btn btn-primary" id="loginBtn" style="margin-top:24px;">Log In</button>
@@ -427,7 +427,7 @@
                     <input type="email" placeholder="your@email.com" id="forgotEmail" required>
                 </div>
                 <button type="submit" class="btn btn-primary" id="forgotBtn" style="margin-top:16px;">
-                    📨 Send Reset Email
+                    Send Reset Email
                 </button>
             </form>
             <div id="forgotSuccess" style="display:none;margin-top:24px;background:rgba(22,163,74,0.1);border:1px solid rgba(22,163,74,0.3);border-radius:12px;padding:16px;text-align:center;">
@@ -451,9 +451,9 @@
                 </div>
             </div>
             <div class="icon-btns">
-                <button class="icon-btn" onclick="app.showContacts()" title="Contacts">👥</button>
-                <button class="icon-btn" onclick="app.showHistory()" title="History">⏰</button>
-                <button class="icon-btn logout" onclick="app.logout()" title="Logout">🚪</button>
+                <button class="icon-btn" onclick="app.showContacts()" title="Contacts"></button>
+                <button class="icon-btn" onclick="app.showHistory()" title="History"></button>
+                <button class="icon-btn logout" onclick="app.logout()" title="Logout"></button>
             </div>
         </div>
 
@@ -469,7 +469,7 @@
             <button class="retry-btn" onclick="app.startGps()">Retry GPS</button>
         </div>
         <div class="banner banner-success" id="gpsOkBanner">
-            ✅ GPS Active • Accuracy: <span id="gpsAcc">--</span>m
+            GPS Active • Accuracy: <span id="gpsAcc">--</span>m
         </div>
 
         <!-- Panic button -->
@@ -504,16 +504,16 @@
                     <div class="wave-bar"></div><div class="wave-bar"></div>
                     <div class="wave-bar"></div>
                 </div>
-                <div class="mic-label">🎙️ Recording &amp; streaming to dispatch</div>
+                <div class="mic-label">Recording &amp; streaming to dispatch</div>
                 <div class="mic-timer" id="micTimer">0:00</div>
             </div>
             <div class="mic-bar" id="micErrBar" style="display:none;background:rgba(249,115,22,0.1);border-color:rgba(249,115,22,0.3);">
-                <span style="font-size:16px;">🎙️</span>
+                <span style="font-size:16px;"></span>
                 <div class="mic-err" id="micErrMsg">Microphone not available</div>
             </div>
 
             <div class="dispatch-log" id="dispatchLog">
-                <div class="log-head">📡 DISPATCH LOG</div>
+                <div class="log-head">DISPATCH LOG</div>
             </div>
             <div class="alert-actions">
                 <button class="a-btn a-btn-share" onclick="app.shareLocation()">📍 Share</button>
@@ -562,7 +562,7 @@
                     <label class="input-label">Relationship</label>
                     <input type="text" placeholder="Mother / Partner" id="cRel">
                 </div>
-                <button type="submit" class="btn btn-primary">👤 Add Contact</button>
+                <button type="submit" class="btn btn-primary">Add Contact</button>
             </form>
             <div id="contactsList"></div>
         </div>
@@ -797,7 +797,7 @@ const app = window.app = {
             await set(ref(db, 'users/' + cred.user.uid), profile);
 
             // onAuthStateChanged will fire and redirect to dashboard automatically
-            this.notify('✅ Account created! Welcome to SecureLink.', 'success');
+            this.notify('✅ Account created! Welcome to Road Angel.', 'success');
 
         } catch(err) {
             this.setLoading('signupBtn', false, 'Complete Sign Up');
