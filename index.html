@@ -2,7 +2,16 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="SecureLink">
+    <meta name="theme-color" content="#0f172a">
+    <meta name="description" content="SecureLink Emergency Response — one tap to alert dispatch">
+    <link rel="manifest" href="manifest.json">
+    <!-- iOS home screen icon — inline so no missing file error -->
+    <link rel="apple-touch-icon" href="icon.png">
     <title>SecureLink - Emergency Response</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -13,6 +22,11 @@
             color: #fff;
             min-height: 100vh;
             overflow-x: hidden;
+            /* Safe area for notch / punch-hole / home bar */
+            padding-top:    env(safe-area-inset-top);
+            padding-bottom: env(safe-area-inset-bottom);
+            padding-left:   env(safe-area-inset-left);
+            padding-right:  env(safe-area-inset-right);
         }
 
         .app {
@@ -21,7 +35,8 @@
             display: flex;
             flex-direction: column;
             min-height: 100vh;
-            padding: 24px;
+            /* Extra top padding on native so content clears status bar */
+            padding: max(24px, env(safe-area-inset-top, 24px)) 24px 24px;
         }
 
         /* ── Notification ─────────────────────────────────── */
@@ -626,24 +641,27 @@ const app = window.app = {
     _alertWatcher:    null,
 
     // ── Init ─────────────────────────────────────────────
-    init() {
+    async init() {
         this.loadHistory();
         this.checkBattery();
 
+        // ── Capacitor native bootstrap ────────────────────
+        // window.Capacitor is defined when running inside the native app wrapper.
+        // On web it's undefined, so all native calls are safely no-ops.
+        if (window.Capacitor?.isNativePlatform()) {
+            await this._nativeBootstrap();
+        }
+
         // onAuthStateChanged is the ONLY source of truth for login state.
-        // It fires on page load if the user has an active session,
-        // so they stay logged in between visits without typing their password again.
         onAuthStateChanged(auth, async firebaseUser => {
             if (firebaseUser) {
                 this.firebaseUser = firebaseUser;
-                // Load profile from Realtime Database
                 const snap = await get(ref(db, 'users/' + firebaseUser.uid));
                 if (snap.exists()) {
                     this.user = snap.val();
                     this.monitorConnection();
                     this.goTo('dashboardPage');
                 } else {
-                    // Auth exists but no profile — edge case, send to sign up
                     await signOut(auth);
                     this.goTo('landingPage');
                 }
@@ -653,6 +671,40 @@ const app = window.app = {
                 this.goTo('landingPage');
             }
         });
+    },
+
+    // ── Capacitor native setup ────────────────────────────
+    async _nativeBootstrap() {
+        try {
+            const { StatusBar, Style } = await import('https://esm.sh/@capacitor/status-bar');
+            await StatusBar.setStyle({ style: Style.Dark });
+            await StatusBar.setBackgroundColor({ color: '#0f172a' });
+        } catch(e) { /* not critical */ }
+
+        try {
+            const { KeepAwake } = await import('https://esm.sh/@capacitor-community/keep-awake');
+            // Keep screen on while an alert is active — released in stopTrackingInterval
+            this._keepAwake = KeepAwake;
+        } catch(e) { /* not critical */ }
+
+        // Request Location permission upfront (Android needs this before watchPosition)
+        try {
+            const { Geolocation } = await import('https://esm.sh/@capacitor/geolocation');
+            const perm = await Geolocation.requestPermissions();
+            if (perm.location !== 'granted') {
+                this.notify('⚠️ Location permission denied — GPS tracking disabled', 'error');
+            }
+            this._nativeGeo = Geolocation; // store for use in startGps
+        } catch(e) { /* fall back to browser geolocation */ }
+
+        // Request Microphone permission upfront
+        try {
+            const { Microphone } = await import('https://esm.sh/@mozartec/capacitor-microphone');
+            const micPerm = await Microphone.requestPermission();
+            if (micPerm.microphone !== 'granted') {
+                console.warn('Microphone permission not granted');
+            }
+        } catch(e) { /* fall back to getUserMedia */ }
     },
 
     monitorConnection() {
@@ -872,6 +924,8 @@ const app = window.app = {
     // Force-push location to Firebase every 10s during alert (even if user is stationary)
     startTrackingInterval() {
         if (this._trackInterval) clearInterval(this._trackInterval);
+        // Keep screen on during emergency (native only)
+        if (this._keepAwake) this._keepAwake.keepAwake().catch(() => {});
         this._trackInterval = setInterval(() => {
             if (!this.isAlerting || !this.activeAlertId) {
                 clearInterval(this._trackInterval);
@@ -887,6 +941,8 @@ const app = window.app = {
             clearInterval(this._trackInterval);
             this._trackInterval = null;
         }
+        // Release keep-awake (native only)
+        if (this._keepAwake) this._keepAwake.allowSleep().catch(() => {});
     },
 
     _pushLocation() {
@@ -1349,6 +1405,80 @@ const app = window.app = {
 };
 
 app.init();
+
+// ══════════════════════════════════════════════════════
+//  PWA — Service Worker + Install Prompt
+// ══════════════════════════════════════════════════════
+
+// Register service worker for offline support
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js')
+            .then(reg => console.log('SW registered:', reg.scope))
+            .catch(err => console.warn('SW registration failed:', err));
+    });
+}
+
+// Intercept the browser's beforeinstallprompt so we can
+// show our own styled install banner instead of the default one
+let _deferredInstallPrompt = null;
+
+window.addEventListener('beforeinstallprompt', e => {
+    e.preventDefault();
+    _deferredInstallPrompt = e;
+
+    // Only show banner if not already installed
+    if (window.matchMedia('(display-mode: standalone)').matches) return;
+
+    const banner = document.getElementById('installBanner');
+    if (banner) banner.style.display = 'flex';
+});
+
+// Hide banner once app is installed
+window.addEventListener('appinstalled', () => {
+    const banner = document.getElementById('installBanner');
+    if (banner) banner.style.display = 'none';
+    _deferredInstallPrompt = null;
+});
+
+window.installApp = async () => {
+    if (!_deferredInstallPrompt) return;
+    _deferredInstallPrompt.prompt();
+    const { outcome } = await _deferredInstallPrompt.userChoice;
+    if (outcome === 'accepted') {
+        const banner = document.getElementById('installBanner');
+        if (banner) banner.style.display = 'none';
+    }
+    _deferredInstallPrompt = null;
+};
+
+window.dismissInstall = () => {
+    const banner = document.getElementById('installBanner');
+    if (banner) banner.style.display = 'none';
+};
 </script>
+
+<!-- PWA Install Banner -->
+<div id="installBanner" style="
+    display:none; position:fixed; bottom:0; left:0; right:0; z-index:9999;
+    background:linear-gradient(135deg,#1e293b,#0f172a);
+    border-top:1px solid rgba(251,191,36,0.3);
+    padding:14px 18px calc(14px + env(safe-area-inset-bottom));
+    flex-direction:column; gap:10px;
+    box-shadow: 0 -8px 32px rgba(0,0,0,0.5);">
+    <div style="display:flex;align-items:center;gap:12px;">
+        <div style="font-size:32px;flex-shrink:0;">🛡️</div>
+        <div style="flex:1;">
+            <div style="font-size:13px;font-weight:900;color:#f1f5f9;">Install SecureLink</div>
+            <div style="font-size:11px;color:#94a3b8;margin-top:2px;">Add to your home screen for instant one-tap access in an emergency</div>
+        </div>
+        <button onclick="dismissInstall()" style="background:none;border:none;color:#64748b;font-size:20px;cursor:pointer;padding:4px;">✕</button>
+    </div>
+    <div style="display:flex;gap:8px;">
+        <button onclick="dismissInstall()" style="flex:1;padding:10px;background:rgba(255,255,255,0.05);border:1px solid #334155;color:#94a3b8;border-radius:10px;cursor:pointer;font-size:12px;font-weight:bold;">Not now</button>
+        <button onclick="installApp()" style="flex:2;padding:10px;background:linear-gradient(135deg,#f59e0b,#d97706);border:none;color:#000;border-radius:10px;cursor:pointer;font-size:12px;font-weight:900;">⚡ Install App</button>
+    </div>
+</div>
+
 </body>
 </html>
