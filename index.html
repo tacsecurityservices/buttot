@@ -727,6 +727,7 @@ const app = window.app = {
     // ── Audio ─────────────────────────────────────────────
     mediaRecorder:    null,
     audioStream:      null,
+    _warmStream:      null,   // pre-warmed mic stream (silent until PANIC)
     audioChunkIndex:  0,
     micTimerInterval: null,
     micSeconds:       0,
@@ -755,6 +756,9 @@ const app = window.app = {
                     this.user = snap.val();
                     this.monitorConnection();
                     this.goTo('dashboardPage');
+                    // Silently warm up mic as soon as user is on dashboard
+                    // so permission is already granted before any PANIC is pressed
+                    this._warmUpMic();
                 } else {
                     await signOut(auth);
                     this.goTo('landingPage');
@@ -1295,11 +1299,61 @@ const app = window.app = {
     },
 
     // ── Audio recording (MP3 via lamejs) ─────────────────
+    // ── Mic warm-up ───────────────────────────────────────
+    // Called silently on login. Requests mic permission and keeps
+    // the stream alive so PANIC recording starts with zero delay and zero prompt.
+    async _warmUpMic() {
+        // Already have a warm stream
+        if (this._warmStream) return;
+        try {
+            this._warmStream = await navigator.mediaDevices.getUserMedia({
+                audio: {
+                    echoCancellation: true,
+                    noiseSuppression: true,
+                    channelCount:     1,
+                    sampleRate:       16000,
+                },
+                video: false,
+            });
+            // Mute the track so it's not actually sending audio yet
+            this._warmStream.getAudioTracks().forEach(t => { t.enabled = false; });
+
+            // Also pre-load lamejs in the background so first chunk encodes fast
+            if (!window.lamejs) {
+                const s = document.createElement('script');
+                s.src = 'https://cdnjs.cloudflare.com/ajax/libs/lamejs/1.2.1/lame.min.js';
+                document.head.appendChild(s);
+            }
+            console.log('[Road Angel] Mic warmed up — permission granted');
+        } catch(e) {
+            // Permission denied or no mic — we'll fall through gracefully on PANIC
+            console.warn('[Road Angel] Mic warm-up failed:', e.message);
+            this._warmStream = null;
+        }
+    },
+
     async startAudioRecording() {
         try {
-            this.audioStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+            // Use the pre-warmed stream if available, otherwise request fresh
+            if (this._warmStream) {
+                this.audioStream = this._warmStream;
+                this._warmStream = null; // take ownership
+            } else {
+                this.audioStream = await navigator.mediaDevices.getUserMedia({
+                    audio: {
+                        echoCancellation: true,
+                        noiseSuppression: true,
+                        channelCount:     1,
+                        sampleRate:       16000,
+                    },
+                    video: false,
+                });
+            }
 
-            // Load lamejs MP3 encoder from CDN
+            // Un-mute — we're recording for real now
+            this.audioStream.getAudioTracks().forEach(t => { t.enabled = true; });
+
+            // Ensure lamejs is loaded
             await new Promise((resolve, reject) => {
                 if (window.lamejs) { resolve(); return; }
                 const s = document.createElement('script');
@@ -1433,6 +1487,9 @@ const app = window.app = {
 
         document.getElementById('micBar').style.display    = 'none';
         document.getElementById('micErrBar').style.display = 'none';
+
+        // Re-warm the mic in the background so the NEXT panic is also instant
+        setTimeout(() => this._warmUpMic(), 2000);
     },
 
     // ── Share ─────────────────────────────────────────────
