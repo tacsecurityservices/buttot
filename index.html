@@ -6,23 +6,27 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="SecureLink">
+    <meta name="apple-mobile-web-app-title" content="Road Angel">
     <meta name="theme-color" content="#0f172a">
-    <meta name="description" content="Road Angel Emergency Response — one tap to alert dispatch">
+    <meta name="description" content="Road Angel Response — one tap to alert dispatch">
     <link rel="manifest" href="manifest.json">
     <!-- iOS home screen icon — inline so no missing file error -->
     <link rel="apple-touch-icon" href="icon.png">
     <title>Road Angel - Emergency Response</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        html, body {
+            height: 100%; height: 100dvh;
+            overscroll-behavior: none;
+        }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', sans-serif;
+            background: #0a1628;
             color: #fff;
-            min-height: 100vh;
-            overflow-x: hidden;
-            /* Safe area for notch / punch-hole / home bar */
+            overflow: hidden;
+            /* Safe areas for notch / home bar */
             padding-top:    env(safe-area-inset-top);
             padding-bottom: env(safe-area-inset-bottom);
             padding-left:   env(safe-area-inset-left);
@@ -30,284 +34,369 @@
         }
 
         .app {
-            max-width: 500px;
-            margin: 0 auto;
-            display: flex;
-            flex-direction: column;
-            min-height: 100vh;
-            /* Extra top padding on native so content clears status bar */
-            padding: max(24px, env(safe-area-inset-top, 24px)) 24px 24px;
+            width: 100%; max-width: 480px; margin: 0 auto;
+            height: 100dvh; display: flex; flex-direction: column;
+            padding: 0;
+            /* Offset safe-area already applied to body */
         }
 
-        /* ── Notification ─────────────────────────────────── */
+        /* ── Notification toast ───────────────────────────── */
         .notification {
-            position: fixed; top: 24px; left: 50%;
-            transform: translateX(-50%);
-            z-index: 50; padding: 12px 24px; border-radius: 16px;
-            font-weight: bold; font-size: 14px;
-            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.5);
+            position: fixed; top: max(16px, env(safe-area-inset-top));
+            left: 50%; transform: translateX(-50%);
+            z-index: 200; padding: 13px 22px; border-radius: 14px;
+            font-weight: 700; font-size: 14px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
             animation: slideDown 0.3s ease-out;
-            display: none; text-align: center; max-width: 320px;
+            display: none; text-align: center;
+            width: calc(100% - 32px); max-width: 340px;
         }
         .notification.show    { display: block; }
-        .notification.success { background-color: #16a34a; }
-        .notification.error   { background-color: #dc2626; }
-        .notification.warning { background-color: #ea580c; }
-        .notification.info    { background-color: #2563eb; }
+        .notification.success { background: #16a34a; }
+        .notification.error   { background: #dc2626; }
+        .notification.warning { background: #ea580c; }
+        .notification.info    { background: #2563eb; }
         @keyframes slideDown {
-            from { opacity:0; transform: translateX(-50%) translateY(-20px); }
+            from { opacity:0; transform: translateX(-50%) translateY(-16px); }
             to   { opacity:1; transform: translateX(-50%) translateY(0); }
         }
 
         /* ── Pages ────────────────────────────────────────── */
-        .page { display: none; flex: 1; flex-direction: column; }
+        .page {
+            display: none; flex: 1; flex-direction: column;
+            overflow-y: auto; overflow-x: hidden;
+            -webkit-overflow-scrolling: touch;
+        }
         .page.active { display: flex; }
 
         /* ── Landing ──────────────────────────────────────── */
         .landing-content {
             flex: 1; display: flex; flex-direction: column;
-            align-items: center; justify-content: center; text-align: center;
+            align-items: center; justify-content: center;
+            text-align: center; padding: 32px 28px;
         }
         .logo-container {
-            width: 96px; height: 96px;
-            background: linear-gradient(135deg, #f97316 0%, #dc2626 100%);
-            border-radius: 24px; display: flex; align-items: center; justify-content: center;
-            margin-bottom: 24px;
-            box-shadow: 0 20px 25px -5px rgba(249,115,22,0.3);
+            width: 88px; height: 88px;
+            background: linear-gradient(135deg, #f97316, #dc2626);
+            border-radius: 22px; display: flex; align-items: center; justify-content: center;
+            margin-bottom: 20px;
+            box-shadow: 0 16px 32px rgba(249,115,22,0.35);
             animation: pulse-anim 3s ease-in-out infinite;
-            font-size: 48px;
+            font-size: 44px;
         }
         @keyframes pulse-anim { 0%,100%{transform:scale(1);} 50%{transform:scale(1.05);} }
-
         .app-title {
-            font-size: 48px; font-weight: 900; letter-spacing: -2px; margin-bottom: 12px;
+            font-size: clamp(36px, 10vw, 52px);
+            font-weight: 900; letter-spacing: -2px; margin-bottom: 10px;
             background: linear-gradient(to right, #fff, #f97316);
             -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
         }
-        .app-subtitle { color: #94a3b8; margin-bottom: 16px; max-width: 280px; line-height: 1.5; }
-        .app-tags { display: flex; gap: 8px; justify-content: center; margin-bottom: 48px; flex-wrap: wrap; }
-        .tag { padding: 4px 10px; background-color: #1e293b; border-radius: 6px; font-size: 10px; color: #475569; }
-
-        .button-group { width: 100%; display: flex; flex-direction: column; gap: 12px; margin-bottom: 32px; }
+        .app-subtitle { color: #94a3b8; margin-bottom: 14px; font-size: 15px; line-height: 1.5; max-width: 260px; }
+        .app-tags { display: flex; gap: 8px; justify-content: center; margin-bottom: 40px; flex-wrap: wrap; }
+        .tag { padding: 5px 11px; background: #1e293b; border-radius: 20px; font-size: 11px; color: #64748b; }
+        .button-group { width: 100%; display: flex; flex-direction: column; gap: 12px; }
         .btn {
-            padding: 16px; border: none; border-radius: 16px; font-weight: bold;
-            cursor: pointer; transition: all 0.3s ease; font-size: 14px;
+            padding: 17px; border: none; border-radius: 16px; font-weight: 700;
+            cursor: pointer; transition: all 0.2s; font-size: 16px;
             display: flex; align-items: center; justify-content: center; gap: 8px;
+            min-height: 54px; /* iOS tap target */
         }
         .btn-primary {
-            background: linear-gradient(135deg, #ea580c 0%, #dc2626 100%);
-            color: white; box-shadow: 0 10px 20px rgba(234,88,12,0.3);
+            background: linear-gradient(135deg, #ea580c, #dc2626);
+            color: white; box-shadow: 0 8px 24px rgba(234,88,12,0.35);
         }
-        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 15px 30px rgba(234,88,12,0.4); }
-        .btn-secondary { background-color: #1e293b; color: #cbd5e1; border: 1px solid #334155; }
-        .btn-secondary:hover { background-color: #0f172a; }
+        .btn-primary:active { transform: scale(0.97); }
+        .btn-secondary { background: #1e293b; color: #cbd5e1; border: 1px solid #334155; }
+        .btn-secondary:active { background: #0f172a; }
 
         /* ── Forms ────────────────────────────────────────── */
-        .form-container { flex: 1; display: flex; flex-direction: column; overflow-y: auto; }
-        .form-header { display: flex; align-items: center; gap: 8px; margin-bottom: 24px; color: #cbd5e1; cursor: pointer; font-size: 14px; }
-        .form-header:hover { color: #e2e8f0; }
-        .form-title    { font-size: 28px; font-weight: 900; margin-bottom: 8px; }
-        .form-subtitle { color: #94a3b8; font-size: 14px; margin-bottom: 32px; line-height: 1.5; }
-        .form { display: flex; flex-direction: column; gap: 16px; }
-        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        .form-container {
+            flex: 1; display: flex; flex-direction: column;
+            overflow-y: auto; -webkit-overflow-scrolling: touch;
+            padding: 20px 24px 32px;
+        }
+        .form-header {
+            display: flex; align-items: center; gap: 8px;
+            margin-bottom: 20px; color: #94a3b8; cursor: pointer;
+            font-size: 15px; min-height: 44px;
+        }
+        .form-header:active { color: #e2e8f0; }
+        .form-title    { font-size: 26px; font-weight: 900; margin-bottom: 6px; }
+        .form-subtitle { color: #94a3b8; font-size: 14px; margin-bottom: 24px; line-height: 1.5; }
+        .form { display: flex; flex-direction: column; gap: 14px; }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 
         .input-wrapper {
-            background-color: #1e293b; border: 1px solid #334155;
-            border-radius: 12px; padding: 12px;
-            display: flex; flex-direction: column; transition: border-color 0.3s;
+            background: #1a2540; border: 1.5px solid #2d3f5c;
+            border-radius: 14px; padding: 14px;
+            display: flex; flex-direction: column; transition: border-color 0.2s;
         }
         .input-wrapper:focus-within { border-color: #f97316; }
-        .input-label { font-size: 10px; color: #64748b; text-transform: uppercase; font-weight: bold; margin-bottom: 4px; }
-        .input-wrapper input { background: transparent; border: none; outline: none; color: #fff; font-size: 14px; }
-        .input-wrapper input::placeholder { color: #64748b; }
+        .input-label { font-size: 10px; color: #64748b; text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 6px; }
+        /* 16px prevents iOS auto-zoom on focus */
+        .input-wrapper input { background: transparent; border: none; outline: none; color: #fff; font-size: 16px; }
+        .input-wrapper input::placeholder { color: #475569; }
+
+        .phone-prefix {
+            display: flex; align-items: center; gap: 8px;
+        }
+        .phone-prefix-label {
+            font-size: 16px; color: #f97316; font-weight: 700; white-space: nowrap;
+        }
+        .phone-prefix input { flex: 1; }
 
         .section-divider {
-            padding: 12px 0 4px; font-size: 11px; font-weight: bold;
+            padding: 10px 0 2px; font-size: 10px; font-weight: 700;
             color: #64748b; text-transform: uppercase; text-align: center;
-            border-top: 1px solid #334155; margin: 4px 0;
+            border-top: 1px solid #1e293b; margin: 4px 0; letter-spacing: 1px;
         }
 
         /* ── Dashboard ────────────────────────────────────── */
-        .dash-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
-        .user-info { display: flex; align-items: center; gap: 12px; }
+        .dash-header {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 16px 20px 12px;
+            background: linear-gradient(180deg, #0f172a 0%, transparent 100%);
+        }
+        .user-info { display: flex; align-items: center; gap: 10px; }
         .user-avatar {
-            width: 48px; height: 48px;
-            background: linear-gradient(135deg, #ea580c 0%, #dc2626 100%);
+            width: 44px; height: 44px; flex-shrink: 0;
+            background: linear-gradient(135deg, #ea580c, #dc2626);
             border-radius: 12px; display: flex; align-items: center; justify-content: center;
-            font-weight: 900; font-size: 18px; border: 2px solid #334155;
+            font-weight: 900; font-size: 16px; border: 2px solid rgba(249,115,22,0.3);
         }
-        .user-name { font-size: 14px; font-weight: bold; }
-        .user-sub  { font-size: 11px; color: #64748b; }
-
-        .icon-btns { display: flex; gap: 8px; }
+        .user-name { font-size: 15px; font-weight: 700; line-height: 1.2; }
+        .user-sub  { font-size: 11px; color: #64748b; margin-top: 1px; }
+        .icon-btns { display: flex; gap: 6px; }
         .icon-btn {
-            width: 40px; height: 40px; background-color: #1e293b;
-            border: 1px solid #334155; border-radius: 12px; color: #cbd5e1;
+            width: 44px; height: 44px; background: #1a2540;
+            border: 1.5px solid #2d3f5c; border-radius: 12px; color: #94a3b8;
             cursor: pointer; display: flex; align-items: center; justify-content: center;
-            font-size: 16px; transition: all 0.3s;
+            font-size: 17px; transition: all 0.2s;
         }
-        .icon-btn:hover { border-color: #f97316; }
-        .icon-btn.logout:hover { border-color: #dc2626; }
+        .icon-btn:active { background: #0f172a; transform: scale(0.93); }
+        .icon-btn.logout:active { border-color: #dc2626; }
 
-        /* GPS banners */
-        .banner { padding: 12px 16px; border-radius: 12px; margin-bottom: 12px; font-size: 12px; display: none; }
-        .banner.show { display: block; }
-        .banner-error   { background-color: rgba(220,38,38,0.1); border: 1px solid rgba(220,38,38,0.3); color: #fecaca; }
-        .banner-success { background-color: rgba(22,163,74,0.1);  border: 1px solid rgba(22,163,74,0.3);  color: #86efac; text-align:center; }
-        .retry-btn { background-color: #dc2626; color: white; padding: 6px 12px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; font-size: 11px; margin-top: 8px; }
-
-        /* Firebase status */
-        .firebase-status {
-            display: flex; align-items: center; gap: 8px;
-            background-color: rgba(59,130,246,0.1); border: 1px solid rgba(59,130,246,0.3);
-            border-radius: 10px; padding: 8px 12px; margin-bottom: 12px; font-size: 11px; color: #93c5fd;
+        /* Status pills row */
+        .status-pills {
+            display: flex; gap: 8px; padding: 0 20px 10px; flex-wrap: wrap;
         }
-        .fb-dot { width: 8px; height: 8px; border-radius: 50%; background-color: #3b82f6; animation: pulse-anim 1.5s ease-in-out infinite; }
-        .fb-dot.connected    { background-color: #22c55e; }
-        .fb-dot.disconnected { background-color: #ef4444; animation: none; }
+        .status-pill {
+            display: flex; align-items: center; gap: 6px;
+            padding: 7px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;
+            flex: 1; min-width: 120px;
+        }
+        .pill-firebase {
+            background: rgba(59,130,246,0.12); border: 1px solid rgba(59,130,246,0.25);
+            color: #93c5fd;
+        }
+        .pill-gps {
+            background: rgba(34,197,94,0.12); border: 1px solid rgba(34,197,94,0.25);
+            color: #86efac;
+        }
+        .pill-gps.error {
+            background: rgba(220,38,38,0.12); border-color: rgba(220,38,38,0.25); color: #fca5a5;
+        }
+        .pill-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+        .pill-dot.blue  { background: #3b82f6; animation: pulse-anim 1.5s infinite; }
+        .pill-dot.green { background: #22c55e; animation: pulse-anim 1.5s infinite; }
+        .pill-dot.red   { background: #ef4444; animation: none; }
+        .pill-dot.grey  { background: #64748b; animation: none; }
 
-        /* ── Panic button ─────────────────────────────────── */
-        .panic-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        /* Old banners — hidden on mobile (replaced by pills) */
+        .firebase-status, .banner { display: none !important; }
+
+        /* GPS error shown as pill with retry */
+        .gps-err-pill {
+            display: none; align-items: center; gap: 8px;
+            background: rgba(220,38,38,0.12); border: 1px solid rgba(220,38,38,0.3);
+            border-radius: 14px; padding: 10px 14px; margin: 0 20px 10px; font-size: 12px; color: #fca5a5;
+        }
+        .gps-err-pill.show { display: flex; }
+        .retry-btn {
+            background: #dc2626; color: white; padding: 5px 12px;
+            border-radius: 8px; border: none; font-weight: 700; cursor: pointer;
+            font-size: 11px; margin-left: auto; min-height: 32px;
+        }
+
+        /* ── Panic button area ────────────────────────────── */
+        .panic-wrap {
+            flex: 1; display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            padding: 16px 20px;
+            gap: 0;
+        }
+        .panic-ring {
+            position: relative; display: flex; align-items: center; justify-content: center;
+            margin-bottom: 20px;
+        }
         .panic-btn {
-            width: 260px; height: 260px; border-radius: 50%;
-            background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
-            border: 18px solid #0f172a;
+            width: min(72vw, 260px); height: min(72vw, 260px);
+            border-radius: 50%;
+            background: radial-gradient(circle at 35% 30%, #ef4444 0%, #b91c1c 60%, #7f1d1d 100%);
+            border: none; outline: none;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             cursor: pointer; position: relative;
-            box-shadow: 0 0 60px rgba(220,38,38,0.5);
-            transition: all 0.3s; font-weight: 900; color: white;
+            box-shadow:
+                0 0 0 12px rgba(220,38,38,0.08),
+                0 0 0 24px rgba(220,38,38,0.05),
+                0 24px 60px rgba(220,38,38,0.55);
+            transition: transform 0.15s, box-shadow 0.15s;
+            font-weight: 900; color: white;
+            -webkit-user-select: none; user-select: none;
         }
-        .panic-btn:not(:disabled):hover  { transform: scale(1.03); box-shadow: 0 0 80px rgba(220,38,38,0.7); }
-        .panic-btn:not(:disabled):active { transform: scale(0.95); }
-        .panic-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+        .panic-btn::after {
+            content: ''; position: absolute; inset: 0; border-radius: 50%;
+            border: 3px solid rgba(255,255,255,0.15);
+        }
         .panic-btn::before {
-            content:''; position:absolute; inset:0;
-            border: 4px solid #fca5a5; border-radius:50%;
-            animation: ring 2s cubic-bezier(0,0,0.2,1) infinite; opacity:0.2;
+            content: ''; position: absolute;
+            width: 100%; height: 100%; border-radius: 50%;
+            border: 2px solid rgba(220,38,38,0.6);
+            animation: ring 2s cubic-bezier(0,0,0.2,1) infinite;
         }
-        @keyframes ring { 75%,100%{ transform:scale(2); opacity:0; } }
-        .panic-icon { font-size: 56px; margin-bottom: 8px; z-index: 1; }
-        .panic-label { font-size: 28px; letter-spacing: -1px; z-index: 1; }
-        .panic-sub   { font-size: 10px; opacity: 0.7; margin-top: 6px; z-index: 1; }
+        @keyframes ring { 0%{transform:scale(1);opacity:0.7} 100%{transform:scale(1.6);opacity:0;} }
+        .panic-btn:not(:disabled):active { transform: scale(0.94); box-shadow: 0 8px 30px rgba(220,38,38,0.6); }
+        .panic-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+        .panic-btn:disabled::before { animation: none; }
+        .panic-icon  { font-size: 52px; margin-bottom: 6px; z-index: 1; line-height: 1; }
+        .panic-label { font-size: 26px; letter-spacing: 2px; z-index: 1; }
+        .panic-sub   { font-size: 9px; opacity: 0.65; margin-top: 5px; z-index: 1; letter-spacing: 1px; }
+        .sys-status  { font-size: 11px; color: #475569; letter-spacing: 0.5px; text-align: center; }
 
-        .sys-status { margin-top: 24px; text-align: center; font-size: 11px; color: #64748b; letter-spacing: 1px; text-transform: uppercase; }
+        /* Info cards strip */
+        .info-cards {
+            display: flex; gap: 8px;
+            padding: 0 20px 20px;
+        }
+        .info-card {
+            flex: 1; background: #1a2540; padding: 12px 8px;
+            border-radius: 14px; border: 1.5px solid #2d3f5c;
+            display: flex; flex-direction: column; align-items: center; text-align: center;
+        }
+        .card-icon   { font-size: 16px; margin-bottom: 4px; }
+        .card-lbl    { font-size: 8px; color: #64748b; text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 3px; }
+        .card-val    { font-size: 13px; font-weight: 800; color: #e2e8f0; }
+        .card-detail { font-size: 9px; color: #64748b; margin-top: 1px; }
 
         /* ── Alert active ─────────────────────────────────── */
-        #alertSection { display: none; flex: 1; flex-direction: column; }
+        #alertSection { display: none; flex: 1; flex-direction: column; padding: 0 20px 20px; overflow-y: auto; }
         .alert-head {
-            background: linear-gradient(to right, rgba(220,38,38,0.2), rgba(249,115,22,0.2));
-            border: 1px solid rgba(220,38,38,0.3);
-            padding: 20px; border-radius: 20px; margin-bottom: 12px;
-            display: flex; align-items: flex-start; justify-content: space-between;
+            background: linear-gradient(135deg, rgba(220,38,38,0.18), rgba(249,115,22,0.12));
+            border: 1.5px solid rgba(220,38,38,0.35);
+            padding: 16px; border-radius: 18px; margin-bottom: 10px;
+            display: flex; align-items: center; justify-content: space-between;
         }
-        .alert-title    { font-size: 22px; font-weight: 900; color: #ef4444; font-style: italic; margin-bottom: 6px; }
-        .alert-veh      { font-size: 12px; color: #fca5a5; }
-        .alert-loc      { font-size: 10px; color: #fecaca; margin-top: 6px; }
-        .bcast-icon     { font-size: 28px; color: #dc2626; animation: pulse-anim 2s ease-in-out infinite; }
-        .bcast-label    { font-size: 8px; color: #fca5a5; margin-top: 4px; text-align:center; }
+        .alert-title { font-size: 20px; font-weight: 900; color: #ef4444; margin-bottom: 4px; }
+        .alert-veh   { font-size: 12px; color: #fca5a5; }
+        .alert-loc   { font-size: 10px; color: #fecaca; margin-top: 4px; }
+        .bcast-icon  { font-size: 26px; animation: pulse-anim 1.5s infinite; }
+        .bcast-label { font-size: 8px; color: #fca5a5; text-align: center; margin-top: 3px; letter-spacing: 1px; }
 
-        .dispatch-log {
-            flex: 1; background-color: rgba(0,0,0,0.3); border: 1px solid #334155;
-            border-radius: 20px; padding: 14px;
-            font-family: 'Monaco', monospace; font-size: 11px; overflow-y: auto; margin-bottom: 12px;
-        }
-        .log-head  { color: #f97316; font-weight: bold; margin-bottom: 10px; }
-        .log-entry { margin-bottom: 10px; border-left: 2px solid rgba(139,92,46,0.5); padding-left: 10px; color: #cbd5e1; line-height: 1.5; }
-
-        .alert-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 4px; }
-        .a-btn { padding: 14px; border-radius: 14px; font-weight: bold; cursor: pointer; font-size: 12px; display: flex; align-items: center; justify-content: center; gap: 6px; color: white; border: none; transition: all 0.3s; }
-        .a-btn-share { background-color: #1e293b; border: 1px solid #475569; color: #cbd5e1; }
-        .a-btn-share:hover { background-color: #334155; }
-        .a-btn-safe  { background-color: #16a34a; }
-        .a-btn-safe:hover  { background-color: #15803d; }
-
-        /* ── Info cards ───────────────────────────────────── */
-        .info-cards { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-top: 16px; }
-        .info-card {
-            background-color: #1e293b; padding: 14px; border-radius: 14px;
-            border: 1px solid #334155; display: flex; flex-direction: column; align-items: center; text-align: center;
-        }
-        .card-icon  { font-size: 18px; margin-bottom: 6px; }
-        .card-lbl   { font-size: 9px; color: #64748b; text-transform: uppercase; font-weight: bold; margin-bottom: 4px; }
-        .card-val   { font-size: 12px; font-weight: bold; color: #e2e8f0; }
-        .card-detail{ font-size: 10px; color: #64748b; }
-
-        /* ── Modals ───────────────────────────────────────── */
-        .modal { position: fixed; inset: 0; background-color: rgba(0,0,0,0.8); backdrop-filter: blur(4px); z-index: 40; display: none; flex-direction: column; align-items: flex-end; }
-        .modal.show { display: flex; }
-        .modal-box { background-color: #0f172a; width: 100%; border-top: 1px solid #334155; padding: 24px; max-height: 80vh; overflow-y: auto; border-radius: 24px 24px 0 0; animation: slideUp 0.3s ease-out; }
-        @keyframes slideUp { from{transform:translateY(100%);} to{transform:translateY(0);} }
-        .modal-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        .modal-title{ font-size: 20px; font-weight: 900; }
-        .close-btn  { background: none; border: none; color: #64748b; cursor: pointer; font-size: 24px; }
-        .close-btn:hover { color: #fff; }
-
-        .contact-item { background-color: #1e293b; border: 1px solid #334155; padding: 14px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-        .contact-name { font-weight: bold; color: white; font-size: 13px; }
-        .contact-phone{ font-size: 12px; color: #cbd5e1; }
-        .contact-rel  { font-size: 10px; color: #64748b; margin-top: 2px; }
-        .del-btn { background: none; border: none; color: #ef4444; cursor: pointer; font-size: 16px; }
-
-        .hist-item { background-color: #1e293b; border: 1px solid #334155; padding: 14px; border-radius: 12px; margin-bottom: 10px; }
-        .hist-row  { display: flex; justify-content: space-between; margin-bottom: 6px; }
-        .hist-num  { color: #ef4444; font-weight: bold; font-size: 12px; }
-        .hist-time { font-size: 10px; color: #64748b; }
-        .hist-detail { font-size: 12px; color: #cbd5e1; display: flex; flex-direction: column; gap: 3px; }
-
-        .empty-state { text-align: center; padding: 32px; color: #64748b; }
-
-        /* ── Status bar ───────────────────────────────────── */
-        .status-bar {
-            margin-top: 12px; padding-top: 12px;
-            display: flex; justify-content: space-between; align-items: center;
-            font-size: 9px; color: #475569; font-family: monospace; letter-spacing: 1px;
-            border-top: 1px solid rgba(52,65,85,0.5);
-        }
-        .gps-row  { display: flex; align-items: center; gap: 6px; }
-        .gps-dot  { width: 6px; height: 6px; border-radius: 50%; animation: pulse-anim 1s ease-in-out infinite; }
-        .gps-dot.on  { background-color: #22c55e; }
-        .gps-dot.off { background-color: #64748b; animation: none; }
-
-        /* ── Mic / Audio recording ────────────────────────── */
         .mic-bar {
             display: flex; align-items: center; gap: 10px;
-            background: linear-gradient(135deg, rgba(220,38,38,0.15), rgba(168,85,247,0.1));
-            border: 1px solid rgba(220,38,38,0.4);
+            background: rgba(220,38,38,0.1); border: 1.5px solid rgba(220,38,38,0.3);
             border-radius: 12px; padding: 10px 14px; margin-bottom: 10px;
         }
-        .mic-dot {
-            width: 10px; height: 10px; border-radius: 50%; background: #ef4444;
-            animation: micPulse 0.6s ease-in-out infinite alternate; flex-shrink: 0;
-        }
-        @keyframes micPulse { from{opacity:1;transform:scale(1);} to{opacity:0.3;transform:scale(0.7);} }
-        .mic-label { font-size: 11px; font-weight: bold; color: #fca5a5; flex: 1; }
-        .mic-timer { font-size: 11px; color: #94a3b8; font-family: monospace; }
-        .mic-err   { font-size: 10px; color: #f97316; }
+        .mic-label { font-size: 12px; font-weight: 700; color: #fca5a5; flex: 1; }
+        .mic-timer { font-size: 12px; color: #94a3b8; font-family: monospace; }
+        .mic-err   { font-size: 11px; color: #f97316; }
+        .waveform  { display: flex; align-items: center; gap: 2px; height: 20px; }
+        .wave-bar  { width: 3px; background: #ef4444; border-radius: 2px; animation: wave 0.5s ease-in-out infinite alternate; }
+        .wave-bar:nth-child(1){animation-delay:0s;    height:4px;}
+        .wave-bar:nth-child(2){animation-delay:0.1s;  height:12px;}
+        .wave-bar:nth-child(3){animation-delay:0.2s;  height:20px;}
+        .wave-bar:nth-child(4){animation-delay:0.3s;  height:8px;}
+        .wave-bar:nth-child(5){animation-delay:0.4s;  height:16px;}
+        .wave-bar:nth-child(6){animation-delay:0.05s; height:6px;}
+        .wave-bar:nth-child(7){animation-delay:0.25s; height:14px;}
+        @keyframes wave { to { height: 3px; opacity: 0.3; } }
 
-        .waveform {
-            display: flex; align-items: center; gap: 2px; height: 20px;
+        .dispatch-log {
+            flex: 1; min-height: 120px;
+            background: rgba(0,0,0,0.25); border: 1px solid #1e293b;
+            border-radius: 16px; padding: 14px;
+            font-family: 'Menlo', 'Monaco', monospace; font-size: 11px;
+            overflow-y: auto; -webkit-overflow-scrolling: touch;
+            margin-bottom: 12px;
         }
-        .wave-bar {
-            width: 3px; background: #ef4444; border-radius: 2px;
-            animation: wave 0.5s ease-in-out infinite alternate;
-        }
-        .wave-bar:nth-child(1) { animation-delay:0s;    height:4px;  }
-        .wave-bar:nth-child(2) { animation-delay:0.1s;  height:12px; }
-        .wave-bar:nth-child(3) { animation-delay:0.2s;  height:20px; }
-        .wave-bar:nth-child(4) { animation-delay:0.3s;  height:8px;  }
-        .wave-bar:nth-child(5) { animation-delay:0.4s;  height:16px; }
-        .wave-bar:nth-child(6) { animation-delay:0.05s; height:6px;  }
-        .wave-bar:nth-child(7) { animation-delay:0.25s; height:14px; }
-        @keyframes wave { to { height: 4px; opacity: 0.4; } }
+        .log-head  { color: #f97316; font-weight: 700; margin-bottom: 8px; }
+        .log-entry { margin-bottom: 8px; border-left: 2px solid rgba(249,115,22,0.3); padding-left: 10px; color: #94a3b8; line-height: 1.5; }
 
+        .alert-actions { display: grid; grid-template-columns: 1fr 1.6fr; gap: 10px; }
+        .a-btn {
+            padding: 16px; border-radius: 16px; font-weight: 700; cursor: pointer;
+            font-size: 14px; display: flex; align-items: center; justify-content: center;
+            gap: 6px; color: white; border: none; transition: all 0.15s;
+            min-height: 54px;
+        }
+        .a-btn:active { transform: scale(0.97); }
+        .a-btn-share { background: #1a2540; border: 1.5px solid #2d3f5c; color: #94a3b8; }
+        .a-btn-safe  { background: linear-gradient(135deg, #16a34a, #15803d); box-shadow: 0 4px 16px rgba(22,163,74,0.3); }
+
+        /* ── Status bar (bottom) ──────────────────────────── */
+        .status-bar {
+            padding: 10px 20px 14px;
+            display: flex; justify-content: space-between; align-items: center;
+            font-size: 9px; color: #334155; font-family: monospace; letter-spacing: 0.5px;
+            border-top: 1px solid #1a2540;
+        }
+        .gps-row  { display: flex; align-items: center; gap: 5px; }
+        .gps-dot  { width: 6px; height: 6px; border-radius: 50%; }
+        .gps-dot.on  { background: #22c55e; animation: pulse-anim 1.5s infinite; }
+        .gps-dot.off { background: #334155; }
+
+        /* ── Modals ───────────────────────────────────────── */
+        .modal {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.75);
+            backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+            z-index: 100; display: none; flex-direction: column; justify-content: flex-end;
+        }
+        .modal.show { display: flex; }
+        .modal-box {
+            background: #111c30; width: 100%;
+            border-top: 1.5px solid #2d3f5c;
+            padding: 24px 24px max(24px, env(safe-area-inset-bottom));
+            max-height: 85dvh; overflow-y: auto; -webkit-overflow-scrolling: touch;
+            border-radius: 24px 24px 0 0;
+            animation: slideUp 0.3s ease-out;
+        }
+        @keyframes slideUp { from{transform:translateY(100%);opacity:0;} to{transform:translateY(0);opacity:1;} }
+        .modal-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .modal-title{ font-size: 20px; font-weight: 900; }
+        .close-btn  { width: 36px; height: 36px; background: #1a2540; border: none; color: #64748b; cursor: pointer; font-size: 20px; border-radius: 10px; display: flex; align-items: center; justify-content: center; }
+        .close-btn:active { background: #0f172a; color: #fff; }
+
+        .contact-item {
+            background: #1a2540; border: 1.5px solid #2d3f5c;
+            padding: 14px; border-radius: 14px;
+            display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;
+        }
+        .contact-name  { font-weight: 700; font-size: 14px; }
+        .contact-phone { font-size: 13px; color: #94a3b8; margin-top: 2px; }
+        .contact-rel   { font-size: 11px; color: #64748b; margin-top: 2px; }
+        .del-btn { width: 40px; height: 40px; background: rgba(220,38,38,0.1); border: none; color: #ef4444; cursor: pointer; font-size: 16px; border-radius: 10px; display: flex; align-items: center; justify-content: center; }
+        .del-btn:active { background: rgba(220,38,38,0.25); }
+
+        .hist-item { background: #1a2540; border: 1.5px solid #2d3f5c; padding: 14px; border-radius: 14px; margin-bottom: 10px; }
+        .hist-row  { display: flex; justify-content: space-between; margin-bottom: 6px; }
+        .hist-num  { color: #ef4444; font-weight: 700; font-size: 13px; }
+        .hist-time { font-size: 11px; color: #64748b; }
+        .hist-detail { font-size: 12px; color: #94a3b8; display: flex; flex-direction: column; gap: 3px; }
+
+        .empty-state { text-align: center; padding: 40px 20px; color: #475569; font-size: 14px; }
+
+        /* ── PWA install banner ───────────────────────────── */
         audio { display: none; }
 
+        /* Scrollbars */
         .form-container::-webkit-scrollbar,
         .dispatch-log::-webkit-scrollbar,
-        .modal-box::-webkit-scrollbar { width: 4px; }
+        .modal-box::-webkit-scrollbar,
+        #alertSection::-webkit-scrollbar { width: 3px; }
         .form-container::-webkit-scrollbar-thumb,
         .dispatch-log::-webkit-scrollbar-thumb,
-        .modal-box::-webkit-scrollbar-thumb { background: #334155; border-radius: 2px; }
+        .modal-box::-webkit-scrollbar-thumb,
+        #alertSection::-webkit-scrollbar-thumb { background: #2d3f5c; border-radius: 2px; }
     </style>
 </head>
 <body>
@@ -318,7 +407,7 @@
     <div class="page active" id="landingPage">
         <div class="landing-content">
             <div class="logo-container">🛡️</div>
-            <h1 class="app-title">Road<span style="color:#f97316;">Angel</span></h1>
+            <h1 class="app-title">ROAD<span style="color:#f97316;"> ANGEL</span></h1>
             <p class="app-subtitle">Elite armed response. Press PANIC — dispatchers respond in real time.</p>
             <div class="app-tags">
                 <span class="tag">24/7 Response</span>
@@ -351,11 +440,11 @@
                     </div>
                 </div>
                 <div class="input-wrapper">
-                    <label class="input-label">Email</label>
+                    <label class="input-label">📧 Email</label>
                     <input type="email" placeholder="john@example.com" id="signupEmail" required>
                 </div>
                 <div class="input-wrapper">
-                    <label class="input-label">Phone Number</label>
+                    <label class="input-label">📱 Phone Number</label>
                     <div style="display:flex;align-items:center;gap:8px;">
                         <span style="color:#f97316;font-weight:bold;font-size:14px;white-space:nowrap;">+27</span>
                         <input type="tel" placeholder="82 123 4567" id="signupPhone"
@@ -368,12 +457,12 @@
                     <div style="font-size:9px;color:#64748b;margin-top:4px;">Enter without leading 0 — e.g. 82 123 4567</div>
                 </div>
                 <div class="input-wrapper">
-                    <label class="input-label">Password</label>
+                    <label class="input-label">🔒 Password</label>
                     <input type="password" placeholder="••••••••" id="signupPassword" minlength="6" required>
                 </div>
                 <div class="section-divider">Vehicle Details</div>
                 <div class="input-wrapper">
-                    <label class="input-label">Number Plate</label>
+                    <label class="input-label">🚗 Number Plate</label>
                     <input type="text" placeholder="GP 123 456" id="signupVehicleReg" required>
                 </div>
                 <div class="form-row">
@@ -382,7 +471,7 @@
                         <input type="text" placeholder="Toyota Hilux" id="signupVehicleMake" required>
                     </div>
                     <div class="input-wrapper">
-                        <label class="input-label">Color</label>
+                        <label class="input-label">🎨 Color</label>
                         <input type="text" placeholder="White" id="signupVehicleColor" required>
                     </div>
                 </div>
@@ -396,14 +485,14 @@
         <div class="form-container">
             <div class="form-header" onclick="app.goTo('landingPage')">← Back</div>
             <h2 class="form-title">Welcome Back</h2>
-            <p class="form-subtitle">Log in to access your SecureLink dashboard.</p>
+            <p class="form-subtitle">Log in to access your Road Angel dashboard.</p>
             <form class="form" onsubmit="app.handleLogin(event)" style="margin-top:40px;">
                 <div class="input-wrapper">
-                    <label class="input-label">Email</label>
+                    <label class="input-label">📧 Email</label>
                     <input type="email" placeholder="your@email.com" id="loginEmail" required>
                 </div>
                 <div class="input-wrapper">
-                    <label class="input-label">Password</label>
+                    <label class="input-label">🔒 Password</label>
                     <input type="password" placeholder="••••••••" id="loginPassword" required>
                 </div>
                 <button type="submit" class="btn btn-primary" id="loginBtn" style="margin-top:24px;">Log In</button>
@@ -427,7 +516,7 @@
                     <input type="email" placeholder="your@email.com" id="forgotEmail" required>
                 </div>
                 <button type="submit" class="btn btn-primary" id="forgotBtn" style="margin-top:16px;">
-                    Send Reset Email
+                    📨 Send Reset Email
                 </button>
             </form>
             <div id="forgotSuccess" style="display:none;margin-top:24px;background:rgba(22,163,74,0.1);border:1px solid rgba(22,163,74,0.3);border-radius:12px;padding:16px;text-align:center;">
@@ -452,25 +541,30 @@
             </div>
             <div class="icon-btns">
                 <button class="icon-btn" onclick="app.showContacts()" title="Contacts">👥</button>
-                <button class="icon-btn" onclick="app.showHistory()" title="History">⏰</button>
+                <button class="icon-btn" onclick="app.showHistory()"  title="History">⏰</button>
                 <button class="icon-btn logout" onclick="app.logout()" title="Logout">🚪</button>
             </div>
         </div>
 
-        <!-- Firebase connection status -->
-        <div class="firebase-status" id="fbStatus">
-            <div class="fb-dot" id="fbDot"></div>
-            <span id="fbStatusText">Connecting to SecureLink servers…</span>
+        <!-- Status pills -->
+        <div class="status-pills">
+            <div class="status-pill pill-firebase" id="fbStatus">
+                <div class="pill-dot blue" id="fbDot"></div>
+                <span id="fbStatusText">Connecting…</span>
+            </div>
+            <div class="status-pill pill-gps" id="gpsPill">
+                <div class="pill-dot grey" id="gpsPillDot"></div>
+                <span id="gpsPillText">GPS: searching…</span>
+            </div>
         </div>
 
-        <!-- GPS banners -->
-        <div class="banner banner-error" id="gpsErrBanner">
-            <div id="gpsErrMsg"></div>
-            <button class="retry-btn" onclick="app.startGps()">Retry GPS</button>
+        <!-- GPS error (shown as pill when GPS fails) -->
+        <div class="gps-err-pill" id="gpsErrBanner">
+            <span id="gpsErrMsg">GPS error</span>
+            <button class="retry-btn" onclick="app.startGps()">Retry</button>
         </div>
-        <div class="banner banner-success" id="gpsOkBanner">
-            GPS Active • Accuracy: <span id="gpsAcc">--</span>m
-        </div>
+        <!-- Hidden old GPS ok banner (logic still references it) -->
+        <div class="banner banner-success" id="gpsOkBanner" style="display:none!important;"></div>
 
         <!-- Panic button -->
         <div class="panic-wrap" id="panicWrap">
@@ -504,16 +598,16 @@
                     <div class="wave-bar"></div><div class="wave-bar"></div>
                     <div class="wave-bar"></div>
                 </div>
-                <div class="mic-label">Recording &amp; streaming to dispatch</div>
+                <div class="mic-label">🎙️ Recording &amp; streaming to dispatch</div>
                 <div class="mic-timer" id="micTimer">0:00</div>
             </div>
             <div class="mic-bar" id="micErrBar" style="display:none;background:rgba(249,115,22,0.1);border-color:rgba(249,115,22,0.3);">
-                <span style="font-size:16px;"></span>
+                <span style="font-size:16px;">🎙️</span>
                 <div class="mic-err" id="micErrMsg">Microphone not available</div>
             </div>
 
             <div class="dispatch-log" id="dispatchLog">
-                <div class="log-head">DISPATCH LOG</div>
+                <div class="log-head">📡 DISPATCH LOG</div>
             </div>
             <div class="alert-actions">
                 <button class="a-btn a-btn-share" onclick="app.shareLocation()">📍 Share</button>
@@ -562,7 +656,7 @@
                     <label class="input-label">Relationship</label>
                     <input type="text" placeholder="Mother / Partner" id="cRel">
                 </div>
-                <button type="submit" class="btn btn-primary">Add Contact</button>
+                <button type="submit" class="btn btn-primary">👤 Add Contact</button>
             </form>
             <div id="contactsList"></div>
         </div>
@@ -585,7 +679,7 @@
             <div class="gps-dot off" id="gpsDot"></div>
             <span id="gpsStatusTxt">GPS: STANDBY</span>
         </div>
-        <div>SECURELINK SA</div>
+        <div>ROAD ANGEL SA</div>
         <div>V3.1 FIREBASE</div>
     </div>
 </div>
@@ -709,11 +803,13 @@ const app = window.app = {
 
     monitorConnection() {
         onValue(ref(db, '.info/connected'), snap => {
-            const connected = snap.val();
-            document.getElementById('fbDot').className         = 'fb-dot ' + (connected ? 'connected' : 'disconnected');
-            document.getElementById('fbStatusText').textContent = connected
-                ? '🟢 Connected to SecureLink servers'
-                : '🔴 Offline — check internet connection';
+            const ok  = snap.val();
+            const dot  = document.getElementById('fbDot');
+            const txt  = document.getElementById('fbStatusText');
+            const pill = document.getElementById('fbStatus');
+            if (dot)  dot.className   = 'pill-dot ' + (ok ? 'green' : 'red');
+            if (txt)  txt.textContent = ok ? 'Connected to Road Angel' : 'Offline';
+            if (pill) pill.className  = 'status-pill ' + (ok ? 'pill-firebase' : 'pill-gps error');
         });
     },
 
@@ -976,29 +1072,45 @@ const app = window.app = {
     },
 
     setGpsError(msg) {
-        document.getElementById('gpsErrMsg').textContent     = msg;
+        document.getElementById('gpsErrMsg').textContent = msg;
         document.getElementById('gpsErrBanner').classList.add('show');
-        document.getElementById('gpsOkBanner').classList.remove('show');
-        document.getElementById('gpsDot').className          = 'gps-dot off';
-        document.getElementById('gpsStatusTxt').textContent  = 'GPS: ERROR';
+        // New pill
+        const dot  = document.getElementById('gpsPillDot');
+        const txt  = document.getElementById('gpsPillText');
+        const pill = document.getElementById('gpsPill');
+        if (dot)  dot.className   = 'pill-dot red';
+        if (txt)  txt.textContent = 'GPS: Error';
+        if (pill) pill.className  = 'status-pill pill-gps error';
         const sw = document.getElementById('sysStatus');
         if (sw) sw.textContent = '🟡 Awaiting GPS…';
-        document.getElementById('panicBtn').disabled          = true;
-        document.getElementById('gpsCardVal').textContent    = 'ERROR';
+        document.getElementById('panicBtn').disabled = true;
+        document.getElementById('gpsCardVal').textContent = 'ERROR';
     },
 
-    clearGpsError() { document.getElementById('gpsErrBanner').classList.remove('show'); },
+    clearGpsError() {
+        document.getElementById('gpsErrBanner').classList.remove('show');
+    },
 
     updateGpsUI() {
-        document.getElementById('gpsOkBanner').classList.add('show');
-        document.getElementById('gpsAcc').textContent       = this.location.accuracy;
-        document.getElementById('gpsDot').className         = 'gps-dot on';
-        document.getElementById('gpsStatusTxt').textContent = this.isAlerting ? 'GPS: TRACKING 🔴' : 'GPS: ACTIVE';
+        // New pill
+        const dot  = document.getElementById('gpsPillDot');
+        const txt  = document.getElementById('gpsPillText');
+        const pill = document.getElementById('gpsPill');
+        if (dot)  dot.className   = 'pill-dot green';
+        if (txt)  txt.textContent = this.isAlerting
+            ? 'GPS: Tracking 🔴'
+            : `GPS Active • ±${this.location.accuracy}m`;
+        if (pill) pill.className  = 'status-pill pill-gps';
+        // Keep status bar dot working
+        const gd = document.getElementById('gpsDot');
+        if (gd) gd.className = 'gps-dot on';
+        const gt = document.getElementById('gpsStatusTxt');
+        if (gt) gt.textContent = this.isAlerting ? 'GPS: TRACKING 🔴' : 'GPS: ACTIVE';
         const sw = document.getElementById('sysStatus');
-        if (sw && !this.isAlerting) sw.textContent = '🟢 System Ready — Tap PANIC to alert dispatch';
-        document.getElementById('panicBtn').disabled         = false;
-        document.getElementById('gpsCardVal').textContent   = this.isAlerting ? 'TRACKING' : 'ACTIVE';
-        document.getElementById('gpsCardDet').textContent   = '±' + this.location.accuracy + 'm';
+        if (sw && !this.isAlerting) sw.textContent = '🟢 SYSTEM READY — TAP PANIC TO ALERT DISPATCH';
+        document.getElementById('panicBtn').disabled = false;
+        document.getElementById('gpsCardVal').textContent = this.isAlerting ? 'TRACKING' : 'ACTIVE';
+        document.getElementById('gpsCardDet').textContent = '±' + this.location.accuracy + 'm';
     },
 
     // ── Battery ───────────────────────────────────────────
@@ -1327,9 +1439,9 @@ const app = window.app = {
     shareLocation() {
         if (!this.location) { this.notify('❌ GPS not available', 'error'); return; }
         const u    = this.user;
-        const text = `🚨 SecureLink Emergency\nUser: ${u.name} ${u.surname}\nVehicle: ${u.vehicleColor} ${u.vehicleMake} (${u.vehicleReg})\nLocation: https://maps.google.com?q=${this.location.lat},${this.location.lng}\nTime: ${new Date().toLocaleString()}`;
+        const text = `🚨 Road Angel\nUser: ${u.name} ${u.surname}\nVehicle: ${u.vehicleColor} ${u.vehicleMake} (${u.vehicleReg})\nLocation: https://maps.google.com?q=${this.location.lat},${this.location.lng}\nTime: ${new Date().toLocaleString()}`;
         if (navigator.share) {
-            navigator.share({ title: 'SecureLink Emergency', text }).catch(() => {});
+            navigator.share({ title: 'Road Angel', text }).catch(() => {});
         } else {
             navigator.clipboard?.writeText(text);
             this.notify('📋 Location copied to clipboard', 'success');
@@ -1469,7 +1581,7 @@ window.dismissInstall = () => {
     <div style="display:flex;align-items:center;gap:12px;">
         <div style="font-size:32px;flex-shrink:0;">🛡️</div>
         <div style="flex:1;">
-            <div style="font-size:13px;font-weight:900;color:#f1f5f9;">Install SecureLink</div>
+            <div style="font-size:13px;font-weight:900;color:#f1f5f9;">Install Road Angel</div>
             <div style="font-size:11px;color:#94a3b8;margin-top:2px;">Add to your home screen for instant one-tap access in an emergency</div>
         </div>
         <button onclick="dismissInstall()" style="background:none;border:none;color:#64748b;font-size:20px;cursor:pointer;padding:4px;">✕</button>
